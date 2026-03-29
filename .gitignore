@@ -1,0 +1,24 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pem
+*.key
+*.crt
+*.p12
+*.log
+.DS_Store
+Thumbs.db
+data/
+static/audio/
+log-de-progresso.csv
+piper.wav
+ref.wav
+saida.wav
+Teste modo argumento.

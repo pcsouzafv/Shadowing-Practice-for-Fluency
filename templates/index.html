@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎧 Shadowing Practice for Fluency</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=20260303a">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-content">
+            <h1>🎧 Shadowing Practice</h1>
+            <p class="subtitle">LMNT + Piper local + Análise IA + Vídeos virais</p>
+        </div>
+        <nav class="tabs">
+            <button class="tab active" data-tab="practice">🗣️ Praticar</button>
+            <button class="tab" data-tab="ai-tools">🤖 IA Tools</button>
+            <button class="tab" data-tab="conversation">💬 Conversar</button>
+            <button class="tab" data-tab="progress">📊 Progresso</button>
+        </nav>
+    </header>
+
+    <main class="container">
+
+        <!-- ═══ TAB: PRATICAR ═══════════════════════════════ -->
+        <section id="tab-practice" class="tab-content active">
+
+            <div class="card">
+                <h2>📝 Insira o texto para shadowing</h2>
+                <textarea id="input-text" rows="5"
+                    placeholder="Cole aqui o texto em inglês que deseja praticar...&#10;&#10;Ex: The key to fluency is consistent daily practice. Even just two minutes a day over thirty days will show noticeable results."></textarea>
+
+                <div class="input-controls">
+                    <div class="control-group">
+                        <label for="lang-select">Idioma:</label>
+                        <select id="lang-select">
+                            <option value="">🌐 Auto</option>
+                            <option value="en" selected>🇺🇸 English</option>
+                            <option value="pt">🇧🇷 Português</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="voice-select">Voz:</label>
+                        <select id="voice-select">
+                            <option value="leah">Leah (F)</option>
+                            <option value="morgan">Morgan (F)</option>
+                            <option value="lily">Lily (F)</option>
+                        </select>
+                        <button id="btn-load-voices" class="btn btn-sm btn-ghost" title="Carregar todas as vozes LMNT">🔄</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="engine-select">Engine:</label>
+                        <select id="engine-select">
+                            <option value="lmnt">🎙️ LMNT (Natural)</option>
+                            <option value="deepgram">🧠 Deepgram (Aura-2)</option>
+                            <option value="local" selected>🖥️ Piper (Local)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-meta">
+                    <span id="word-count" class="word-count">0 palavras · 0 caracteres</span>
+                </div>
+
+                <div class="action-row">
+                    <button id="btn-generate" class="btn btn-primary">
+                        🚀 Gerar Sessão
+                    </button>
+                    <button id="btn-analyze" class="btn btn-accent">
+                        🤖 Analisar com IA
+                    </button>
+                    <button id="btn-combo" class="btn btn-lmnt" title="Gera áudio + análise IA em paralelo">
+                        ⚡ Gerar + Analisar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p id="loading-text">Gerando áudio com voz natural...</p>
+            </div>
+
+            <!-- Resultado da Análise IA -->
+            <div id="analysis-section" class="hidden">
+                <div class="card card-ai">
+                    <h2>🤖 Análise Inteligente do Texto</h2>
+                    <div id="analysis-content"></div>
+                </div>
+            </div>
+
+            <!-- Resultado: Áudio + Texto -->
+            <div id="result-section" class="hidden">
+
+                <div class="card">
+                    <div class="card-header-row">
+                        <h2>🔊 Áudio para Shadowing</h2>
+                        <span class="engine-badge" id="engine-badge"></span>
+                    </div>
+                    <div class="audio-player">
+                        <audio id="main-audio" controls></audio>
+                        <div class="audio-controls-row">
+                            <div class="speed-controls">
+                                <span>Velocidade:</span>
+                                <button class="speed-btn" data-speed="0.5">0.5x</button>
+                                <button class="speed-btn" data-speed="0.75">0.75x</button>
+                                <button class="speed-btn active" data-speed="1">1.0x</button>
+                                <button class="speed-btn" data-speed="1.25">1.25x</button>
+                                <button class="speed-btn" data-speed="1.5">1.5x</button>
+                            </div>
+                            <div class="loop-controls">
+                                <button id="btn-loop" class="btn btn-sm btn-ghost" title="Repetir áudio automaticamente">
+                                    🔁 Loop: OFF
+                                </button>
+                                <select id="loop-count" class="loop-select">
+                                    <option value="0">∞ Infinito</option>
+                                    <option value="3">3x</option>
+                                    <option value="5" selected>5x</option>
+                                    <option value="10">10x</option>
+                                    <option value="15">15x</option>
+                                </select>
+                                <span id="loop-counter" class="loop-counter hidden">0/5</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card karaoke-card">
+                    <h2>📖 Texto Sincronizado</h2>
+                    <p class="hint">▶ Dê play no áudio — o texto acompanha a fala em tempo real</p>
+                    <div id="karaoke-text" class="karaoke-text"></div>
+                    <div class="karaoke-progress">
+                        <div class="karaoke-progress-fill" id="karaoke-progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🎙️ Grave e Compare</h2>
+                    <div class="recording-section">
+                        <button id="btn-record" class="btn btn-record">
+                            <span class="rec-icon">⏺</span> Gravar
+                        </button>
+                        <button id="btn-stop-record" class="btn btn-stop hidden">⏹ Parar</button>
+                        <div id="recording-status" class="rec-status"></div>
+                    </div>
+                    <div id="recordings-list" class="recordings-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>🎬 Vídeos Virais Relacionados</h2>
+                    <p class="hint">Use estes vídeos para shadowing avançado com conteúdo real</p>
+                    <div id="videos-grid" class="videos-grid"></div>
+                </div>
+            </div>
+
+            <div class="card yt-karaoke-card">
+                <div class="card-header-row">
+                    <h2>🎤 YouTube Karaoke Lab</h2>
+                    <span id="yt-karaoke-track-meta" class="badge badge-sm hidden"></span>
+                </div>
+                <p class="hint">Video no topo, legenda embaixo com efeito karaoke para música, filmes e entrevistas. Dica: Shift/Ctrl + clique na linha para calibrar a sincronia.</p>
+                <div class="yt-k-controls">
+                    <input
+                        type="text"
+                        id="yt-url-input"
+                        placeholder="Cole link ou ID: https://www.youtube.com/watch?v=..."
+                    >
+                    <select id="yt-lang-select" title="Idioma preferido da legenda">
+                        <option value="en" selected>🇺🇸 Legenda em inglês</option>
+                        <option value="pt">🇧🇷 Legenda em português</option>
+                        <option value="es">🇪🇸 Legenda em espanhol</option>
+                        <option value="fr">🇫🇷 Legenda em francês</option>
+                        <option value="de">🇩🇪 Legenda em alemão</option>
+                        <option value="it">🇮🇹 Legenda em italiano</option>
+                    </select>
+                    <select id="yt-sync-mode" title="Estratégia de sincronização">
+                        <option value="accuracy" selected>🎯 Sync preciso</option>
+                        <option value="balanced">⚖️ Balanceado</option>
+                        <option value="fast">⚡ Carregamento rápido</option>
+                    </select>
+                    <button id="btn-load-yt-karaoke" class="btn btn-lmnt">🎬 Carregar Karaoke</button>
+                </div>
+
+                <div id="yt-karaoke-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Extraindo transcrição do YouTube...</p>
+                </div>
+
+                <p id="yt-karaoke-empty" class="hint">Selecione um vídeo sugerido ou cole um link para começar.</p>
+
+                <div id="yt-karaoke-panel" class="hidden">
+                    <div class="yt-karaoke-layout">
+                        <div class="yt-karaoke-video-col">
+                            <div class="yt-k-toolbar">
+                                <p id="yt-karaoke-info" class="hint"></p>
+                                <div class="yt-k-toolbar-actions">
+                                    <div class="yt-k-toolbar-group">
+                                        <button id="btn-yt-autoscroll" class="btn btn-sm btn-ghost">🧭 Auto-scroll: ON</button>
+                                        <button id="btn-yt-delay-minus" class="btn btn-sm btn-ghost" title="Atrasar legenda em 0.25s">◀ 0.25s</button>
+                                        <span id="yt-delay-value" class="yt-delay-value">Ajuste +0.00s</span>
+                                        <button id="btn-yt-delay-plus" class="btn btn-sm btn-ghost" title="Adiantar legenda em 0.25s">0.25s ▶</button>
+                                        <button id="btn-yt-sync-now" class="btn btn-sm btn-ghost">🎯 Marcar início agora</button>
+                                        <button id="btn-yt-delay-reset" class="btn btn-sm btn-ghost">Reset</button>
+                                    </div>
+                                    <div class="yt-k-toolbar-group yt-k-toolbar-group-study">
+                                        <select id="yt-study-target" class="yt-study-target" title="Idioma de tradução do estudo">
+                                            <option value="pt" selected>🇧🇷 Traduzir para PT</option>
+                                            <option value="en">🇺🇸 Translate to EN</option>
+                                            <option value="es">🇪🇸 Traducir al ES</option>
+                                            <option value="fr">🇫🇷 Traduire en FR</option>
+                                            <option value="de">🇩🇪 Auf DE ubersetzen</option>
+                                            <option value="it">🇮🇹 Tradurre in IT</option>
+                                        </select>
+                                        <button id="btn-yt-study" class="btn btn-sm btn-accent">📚 Estudar transcrição</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="yt-player-wrap">
+                                <div id="yt-karaoke-player"></div>
+                            </div>
+                            <div class="karaoke-progress">
+                                <div id="yt-karaoke-progress-fill" class="karaoke-progress-fill"></div>
+                            </div>
+                        </div>
+                        <div class="yt-karaoke-subtitles-col">
+                            <div id="yt-karaoke-subtitles" class="yt-karaoke-subtitles"></div>
+                        </div>
+                    </div>
+                    <div id="yt-study-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <p>Analisando frases e vocabulário com IA...</p>
+                    </div>
+                    <div id="yt-study-panel" class="yt-study-panel hidden">
+                        <div class="card-header-row">
+                            <h3>🧠 Estudo Frase por Frase</h3>
+                            <span id="yt-study-meta" class="badge badge-sm"></span>
+                        </div>
+                        <p id="yt-study-intro" class="yt-study-intro hidden"></p>
+                        <div id="yt-study-list" class="yt-study-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="video-player-modal" class="modal hidden">
+                <div class="modal-content">
+                    <button class="modal-close" id="btn-close-modal">✕</button>
+                    <div class="video-wrapper">
+                        <iframe id="video-iframe" src="" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                    <div class="modal-controls">
+                        <h3 id="video-title"></h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico de sessões -->
+            <div id="history-section" class="card history-accordion hidden">
+                <button id="history-accordion-btn" class="history-accordion-btn" type="button" aria-expanded="true" aria-controls="history-content">
+                    <span class="history-accordion-title">📂 Sessões Anteriores</span>
+                    <span class="history-accordion-icon" aria-hidden="true">▾</span>
+                </button>
+                <div id="history-content" class="history-content">
+                    <p class="hint history-hint">Clique para reaproveitar um texto já praticado</p>
+                    <div id="history-list" class="history-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ MISSION CONTROL — Floating Sidebar ════════ -->
+        <aside id="mission-control" class="mc-panel hidden">
+            <div class="mc-header">
+                <div class="mc-title-row">
+                    <h3>📋 Sessão</h3>
+                    <div class="mc-progress-ring-wrap">
+                        <svg class="mc-ring" viewBox="0 0 36 36">
+                            <path class="mc-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="mc-ring-fill" id="mc-ring-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <span class="mc-ring-text" id="mc-ring-text">0/6</span>
+                    </div>
+                </div>
+                <button class="mc-toggle-btn" id="mc-toggle-btn" title="Minimizar/Expandir">◀</button>
+            </div>
+
+            <div class="mc-phases" id="mc-phases">
+                <div class="mc-phase" data-mc-phase="1" data-mc-duration="180" data-mc-action="listen-only">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">🎧 Escuta Passiva</span>
+                            <span class="mc-phase-hint">Ouça sem repetir · 3 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">03:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+
+                <div class="mc-phase" data-mc-phase="2" data-mc-duration="180" data-mc-action="read-only">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">📖 Leitura</span>
+                            <span class="mc-phase-hint">Leia e busque palavras · 3 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">03:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+
+                <div class="mc-phase" data-mc-phase="3" data-mc-duration="180" data-mc-action="listen-read">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">👁️ Escuta + Leitura</span>
+                            <span class="mc-phase-hint">Som ↔ texto juntos · 3 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">03:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+
+                <div class="mc-phase" data-mc-phase="4" data-mc-duration="420" data-mc-action="shadow-with-text">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">🗣️ Shadow COM Texto</span>
+                            <span class="mc-phase-hint">Repita junto com áudio · 7 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">07:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+
+                <div class="mc-phase mc-phase-star" data-mc-phase="5" data-mc-duration="420" data-mc-action="shadow-no-text">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">⭐ Shadow SEM Texto</span>
+                            <span class="mc-phase-hint">Imite tudo sem olhar · 7 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">07:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+
+                <div class="mc-phase" data-mc-phase="6" data-mc-duration="180" data-mc-action="record">
+                    <div class="mc-phase-row">
+                        <button class="mc-check" title="Marcar como concluído"><span class="mc-check-icon">○</span></button>
+                        <div class="mc-phase-info">
+                            <span class="mc-phase-name">🎙️ Grave e Compare</span>
+                            <span class="mc-phase-hint">Grave e ouça de volta · 3 min</span>
+                        </div>
+                        <button class="mc-play-btn" title="Ativar esta fase">▶</button>
+                    </div>
+                    <div class="mc-timer-row hidden">
+                        <div class="mc-timer-bar"><div class="mc-timer-fill"></div></div>
+                        <span class="mc-timer-display">03:00</span>
+                        <button class="mc-timer-ctrl" title="Pausar/Continuar">⏸</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mc-footer">
+                <button class="btn btn-sm btn-ghost" id="mc-reset-btn">🔄 Reiniciar</button>
+            </div>
+        </aside>
+
+        <!-- ═══ TAB: IA TOOLS ═══════════════════════════════ -->
+        <section id="tab-ai-tools" class="tab-content">
+            <div class="card card-ai">
+                <h2>🧩 Status das APIs</h2>
+                <p class="hint">Confira rapidamente quais integrações estão ativas no momento</p>
+                <div class="api-badges" id="api-badges"></div>
+            </div>
+
+            <div class="card card-ai">
+                <div class="card-header-row">
+                    <h2>📱 WhatsApp Module</h2>
+                    <div class="action-row">
+                        <button id="btn-wa-status" class="btn btn-sm btn-ghost">🔄 Atualizar status</button>
+                        <button id="btn-wa-students" class="btn btn-sm btn-ghost">👥 Alunos</button>
+                    </div>
+                </div>
+                <p class="hint">Configure e monitore o assistente professor do WhatsApp direto nesta aba.</p>
+
+                <div id="wa-status-badges" class="api-badges"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="wa-webhook-url">Webhook URL (opcional)</label>
+                        <input
+                            type="text"
+                            id="wa-webhook-url"
+                            placeholder="https://seu-dominio.com/whatsapp/webhook"
+                        >
+                    </div>
+                    <div class="form-group wa-actions-wrap">
+                        <label>&nbsp;</label>
+                        <div class="action-row">
+                            <button id="btn-wa-setup" class="btn btn-primary">⚙️ Configurar instância</button>
+                            <button id="btn-wa-qrcode" class="btn btn-lmnt">🔳 Carregar QR Code</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wa-feedback" class="hint"></div>
+
+                <div id="wa-qr-section" class="wa-qr-section hidden">
+                    <h3>QR Code do WhatsApp</h3>
+                    <p class="hint">Escaneie no celular em WhatsApp → Aparelhos conectados → Conectar aparelho.</p>
+                    <img id="wa-qr-image" class="wa-qr-image hidden" alt="QR Code do WhatsApp">
+                    <pre id="wa-qr-raw" class="wa-json hidden"></pre>
+                </div>
+
+                <div class="wa-panels">
+                    <div class="wa-panel">
+                        <h3>Status detalhado</h3>
+                        <pre id="wa-status-json" class="wa-json">Clique em "Atualizar status".</pre>
+                    </div>
+                    <div class="wa-panel">
+                        <h3>Alunos cadastrados</h3>
+                        <pre id="wa-students-json" class="wa-json">Clique em "Alunos".</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-ai">
+                <h2>🤖 Gerador de Texto</h2>
+                <p class="hint">A IA gera textos para shadowing com idioma, tamanho e tipo que você escolher</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ai-topic">Tema</label>
+                        <input type="text" id="ai-topic" placeholder="Ex: job interview, ordering food, travel...">
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-lang">Idioma do texto</label>
+                        <select id="ai-lang">
+                            <option value="en" selected>🇺🇸 English</option>
+                            <option value="pt">🇧🇷 Português</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-level">Nível</label>
+                        <select id="ai-level">
+                            <option value="beginner">Iniciante</option>
+                            <option value="intermediate" selected>Intermediário</option>
+                            <option value="advanced">Avançado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-length">Tamanho</label>
+                        <select id="ai-length">
+                            <option value="micro">Micro (1-2 frases)</option>
+                            <option value="short">Curto (3-4 frases)</option>
+                            <option value="medium" selected>Médio (5-6 frases)</option>
+                            <option value="long">Longo (7-9 frases)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-type">Tipo</label>
+                        <select id="ai-type">
+                            <option value="dialogue" selected>Diálogo</option>
+                            <option value="monologue">Monólogo</option>
+                            <option value="story">Mini história</option>
+                            <option value="interview">Entrevista</option>
+                            <option value="presentation">Apresentação</option>
+                            <option value="casual_chat">Conversa casual</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-focus">Foco</label>
+                        <select id="ai-focus">
+                            <option value="general fluency">Fluência geral</option>
+                            <option value="pronunciation">Pronúncia</option>
+                            <option value="linking sounds">Linking sounds</option>
+                            <option value="intonation">Entonação</option>
+                            <option value="formal speech">Fala formal</option>
+                            <option value="casual speech">Fala casual</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="btn-ai-generate" class="btn btn-accent">⚡ Gerar Texto para Prática</button>
+
+                <div id="ai-practice-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>A IA está criando seu material...</p>
+                </div>
+
+                <div id="ai-practice-result" class="hidden">
+                    <div class="ai-result-card">
+                        <h3 id="ai-practice-title"></h3>
+                        <div class="ai-text-box" id="ai-practice-text"></div>
+                        <div id="ai-practice-focus" class="ai-tags"></div>
+                        <div id="ai-practice-vocab"></div>
+                        <button id="btn-use-ai-text" class="btn btn-primary">🎧 Usar este texto para shadowing</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-ai">
+                <h2>🎙️ Vozes LMNT Disponíveis</h2>
+                <p class="hint">Ouça previews e escolha a voz ideal para sua prática</p>
+                <button id="btn-refresh-voices" class="btn btn-sm btn-ghost">🔄 Carregar vozes</button>
+                <div id="voices-grid" class="voices-grid"></div>
+            </div>
+        </section>
+
+        <!-- ═══ TAB: CONVERSAÇÃO ══════════════════════════════ -->
+        <section id="tab-conversation" class="tab-content">
+            <div class="card conv-card">
+                <div class="conv-header">
+                    <h2>💬 Prática de Conversação</h2>
+                    <p class="hint">Fale com um parceiro nativo por IA — clique no microfone e converse em voz.</p>
+                </div>
+
+                <div class="conv-settings">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="conv-lang">Idioma</label>
+                            <select id="conv-lang">
+                                <option value="en" selected>🇺🇸 English</option>
+                                <option value="pt">🇧🇷 Português</option>
+                                <option value="es">🇪🇸 Español</option>
+                                <option value="fr">🇫🇷 Français</option>
+                                <option value="de">🇩🇪 Deutsch</option>
+                                <option value="it">🇮🇹 Italiano</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="conv-voice">Voz IA</label>
+                            <select id="conv-voice">
+                                <option value="leah" selected>Leah (EN)</option>
+                                <option value="lily">Lily (EN)</option>
+                                <option value="michael">Michael (EN)</option>
+                                <option value="amy">Amy (EN)</option>
+                                <option value="ryan">Ryan (EN)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="conv-tts-engine">Engine de voz</label>
+                            <select id="conv-tts-engine">
+                                <option value="lmnt" selected>🎙️ LMNT (Natural)</option>
+                                <option value="deepgram">🧠 Deepgram (Aura-2)</option>
+                                <option value="local">🖥️ Piper (Local)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="conv-translate-to">Traduzir para</label>
+                            <select id="conv-translate-to">
+                                <option value="pt" selected>🇧🇷 Português</option>
+                                <option value="en">🇺🇸 English</option>
+                                <option value="es">🇪🇸 Español</option>
+                                <option value="fr">🇫🇷 Français</option>
+                                <option value="de">🇩🇪 Deutsch</option>
+                                <option value="it">🇮🇹 Italiano</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <label class="conv-toggle-label">
+                                <input type="checkbox" id="conv-suggest-toggle">
+                                <span class="conv-toggle-pill"></span>
+                                <span>💡 Colinha</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <label class="conv-toggle-label">
+                                <input type="checkbox" id="conv-auto-send-toggle">
+                                <span class="conv-toggle-pill"></span>
+                                <span>⏱️ Envio automático (5s silêncio)</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="btn-group-vert">
+                                <button class="btn btn-sm btn-ghost" id="conv-clear-btn">🗑️ Limpar</button>
+                                <button class="btn btn-sm btn-primary" id="conv-lesson-btn">🎯 Aula Inteligente + Correção</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conv-body" id="conv-body">
+                    <div class="conv-chat" id="conv-chat">
+                        <div class="conv-empty" id="conv-empty">
+                            <span class="conv-empty-icon">🎙️</span>
+                            <p>Clique no microfone e comece a falar!</p>
+                        </div>
+                    </div>
+
+                    <aside class="conv-colinha hidden" id="conv-colinha">
+                        <div class="conv-colinha-header">
+                            <span>💡 Colinha</span>
+                            <span class="conv-colinha-hint">Sugestões do que falar</span>
+                        </div>
+                        <div class="conv-colinha-empty" id="conv-colinha-empty">
+                            <p>As sugestões aparecerão aqui após a IA responder.</p>
+                        </div>
+                        <div class="conv-chips" id="conv-chips"></div>
+                    </aside>
+                </div>
+
+                <div class="conv-controls">
+                    <button class="conv-mic-btn" id="conv-mic-btn" title="Clique para falar">
+                        <span class="conv-mic-icon">🎙️</span>
+                    </button>
+                    <span class="conv-status" id="conv-status">Clique para falar</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ TAB: PROGRESSO ══════════════════════════════ -->
+        <section id="tab-progress" class="tab-content">
+            <div class="card">
+                <h2>📊 Log de Progresso</h2>
+                <form id="progress-form" class="progress-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prog-date">Data</label>
+                            <input type="date" id="prog-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="prog-material">Material</label>
+                            <input type="text" id="prog-material" placeholder="Ex: TED Talk - Tim Urban">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prog-duration">Duração (min)</label>
+                            <input type="number" id="prog-duration" min="1" max="120" value="20">
+                        </div>
+                        <div class="form-group">
+                            <label for="prog-reps">Repetições</label>
+                            <input type="number" id="prog-reps" min="1" max="20" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label for="prog-diff">Dificuldade (1-5)</label>
+                            <input type="range" id="prog-diff" min="1" max="5" value="3">
+                            <span id="diff-display" class="diff-display">3</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prog-notes">Observações</label>
+                        <input type="text" id="prog-notes" placeholder="Ex: Melhorou linking sounds">
+                    </div>
+                    <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>📈 Histórico</h2>
+                <div id="progress-table-container">
+                    <table class="progress-table">
+                        <thead><tr><th>Data</th><th>Material</th><th>Duração</th><th>Reps</th><th>Dificuldade</th><th>Observações</th><th></th></tr></thead>
+                        <tbody id="progress-tbody"></tbody>
+                    </table>
+                    <p id="no-progress" class="hint">Nenhuma sessão registrada ainda.</p>
+                    <div class="action-row mt-12">
+                        <button id="btn-export-csv" class="btn btn-sm btn-ghost">📥 Exportar CSV</button>
+                    </div>
+                </div>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="stat-sessions">0</div><div class="stat-label">Sessões</div></div>
+                    <div class="stat-card"><div class="stat-number" id="stat-minutes">0</div><div class="stat-label">Minutos</div></div>
+                    <div class="stat-card"><div class="stat-number" id="stat-avg-diff">-</div><div class="stat-label">Dific. média</div></div>
+                    <div class="stat-card"><div class="stat-number" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>🧠 Coach Adaptativo</h2>
+                <p id="adaptive-learner-meta" class="hint">Sem atividade adaptativa ainda.</p>
+                <p id="adaptive-warning" class="hint hidden"></p>
+                <div class="stats-grid" id="adaptive-stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="adaptive-pron-score">0.0</div><div class="stat-label">Pronúncia média</div></div>
+                    <div class="stat-card"><div class="stat-number" id="adaptive-review-due">0</div><div class="stat-label">Revisões vencidas</div></div>
+                    <div class="stat-card"><div class="stat-number" id="adaptive-tracked-items">0</div><div class="stat-label">Itens rastreados</div></div>
+                    <div class="stat-card"><div class="stat-number" id="adaptive-active-days">0</div><div class="stat-label">Dias ativos (7d)</div></div>
+                </div>
+                <div class="adaptive-review-lab">
+                    <div class="card-header-row">
+                        <h3>🃏 Flashcards do Banco</h3>
+                        <span id="adaptive-flashcard-meta" class="badge badge-sm">0 cartas</span>
+                    </div>
+                    <p id="adaptive-flashcard-hint" class="hint">As cartas usam palavras rastreadas no banco e atualizam a fila de revisão.</p>
+                    <div id="adaptive-flashcard-shell" class="adaptive-flashcard-shell">
+                        <div class="adaptive-flashcard-stage">
+                            <button id="btn-adaptive-flashcard-prev" class="btn btn-sm btn-ghost adaptive-flashcard-nav" type="button" aria-label="Carta anterior">◀</button>
+                            <article id="adaptive-flashcard" class="adaptive-flashcard" tabindex="0" aria-live="polite">
+                                <div id="adaptive-flashcard-front" class="adaptive-flashcard-face adaptive-flashcard-front"></div>
+                                <div id="adaptive-flashcard-back" class="adaptive-flashcard-face adaptive-flashcard-back"></div>
+                            </article>
+                            <button id="btn-adaptive-flashcard-next" class="btn btn-sm btn-ghost adaptive-flashcard-nav" type="button" aria-label="Próxima carta">▶</button>
+                        </div>
+                        <div class="adaptive-flashcard-actions">
+                            <button id="btn-adaptive-flip" class="btn btn-sm btn-accent" type="button">🔄 Virar</button>
+                            <button id="btn-adaptive-grade-again" class="btn btn-sm btn-ghost" type="button">🔁 Errei</button>
+                            <button id="btn-adaptive-grade-hard" class="btn btn-sm btn-ghost" type="button">😐 Quase</button>
+                            <button id="btn-adaptive-grade-good" class="btn btn-sm btn-success" type="button">✅ Acertei</button>
+                            <button id="btn-adaptive-grade-easy" class="btn btn-sm btn-ghost" type="button">🚀 Fácil</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="adaptive-columns">
+                    <div class="adaptive-column">
+                        <h3>🔁 Revisão de Hoje</h3>
+                        <div id="review-queue" class="adaptive-list"></div>
+                    </div>
+                    <div class="adaptive-column">
+                        <h3>🎯 Próximas Ações</h3>
+                        <div id="adaptive-recommendations" class="adaptive-list"></div>
+                    </div>
+                </div>
+                <div class="adaptive-columns">
+                    <div class="adaptive-column">
+                        <h3>⚠️ Pontos Fracos</h3>
+                        <div id="adaptive-weak-points" class="adaptive-pills"></div>
+                    </div>
+                    <div class="adaptive-column">
+                        <h3>✅ Pontos Fortes</h3>
+                        <div id="adaptive-strengths" class="adaptive-pills"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-main">
+                <p>🎧 Shadowing Practice — LMNT + Piper + OpenRouter/Ollama IA — A chave é a <strong>consistência diária</strong></p>
+                <p class="footer-author">
+                    Feito por <strong>Ricardo</strong> ·
+                    <a href="https://www.linkedin.com/in/pcricardo2024/" target="_blank" rel="noopener noreferrer">LinkedIn</a> ·
+                    <a href="https://github.com/pcsouzafv" target="_blank" rel="noopener noreferrer">GitHub</a>
+                </p>
+            </div>
+            <div class="footer-stats">
+                <span id="disk-stats" class="disk-stats"></span>
+                <button id="btn-cleanup" class="btn btn-sm btn-ghost" title="Limpar áudios em cache">🗑️ Limpar cache</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ═══ LESSON MODAL ══════════════════════════════════════════ -->
+    <div class="lesson-modal hidden" id="lesson-modal">
+        <div class="lesson-modal-content">
+            <div class="lesson-modal-header">
+                <div>
+                    <h2>🎓 Aula Gerada pela IA</h2>
+                    <p class="lesson-modal-sub" id="lesson-modal-sub"></p>
+                </div>
+                <button class="lesson-modal-close" id="lesson-modal-close" title="Fechar">✕</button>
+            </div>
+            <div class="lesson-modal-body" id="lesson-modal-body"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js?v=20260303b"></script>
+</body>
+</html>

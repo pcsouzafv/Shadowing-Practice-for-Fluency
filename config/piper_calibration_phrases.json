@@ -1,0 +1,162 @@
+{
+  "_notes": [
+    "Frases curtas para comparar naturalidade, pausas, perguntas, explicacao e dialogo.",
+    "Cada item pode sugerir um profile/context_hint inicial, mas o script permite sobrescrever."
+  ],
+  "pt": [
+    {
+      "id": "pt_dialogo_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Ana: Vamos praticar agora?\nBruno: Vamos sim, mas bem devagar primeiro."
+    },
+    {
+      "id": "pt_explicacao_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Hoje vamos repetir frases curtas e prestar atenção ao ritmo da fala."
+    },
+    {
+      "id": "pt_pergunta_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "Como você diria essa frase de um jeito mais natural?"
+    },
+    {
+      "id": "pt_historia_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "Quando eu cheguei ao aeroporto, o portão já estava quase fechando."
+    }
+  ],
+  "en": [
+    {
+      "id": "en_dialogue_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Emma: Are you ready to start?\nNoah: Almost. Give me just one more minute."
+    },
+    {
+      "id": "en_lesson_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Listen carefully to the stress pattern and copy the rhythm, not only the words."
+    },
+    {
+      "id": "en_question_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "Why does this sentence sound more natural in conversation?"
+    },
+    {
+      "id": "en_story_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "By the time we reached the station, the train had already left."
+    }
+  ],
+  "es": [
+    {
+      "id": "es_dialogo_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Lucía: ¿Empezamos ahora?\nDiego: Sí, pero primero quiero escuchar un ejemplo."
+    },
+    {
+      "id": "es_explicacion_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Escucha el ritmo de la frase y repítela sin separar demasiado las palabras."
+    },
+    {
+      "id": "es_pregunta_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "¿Cómo sonarías más natural en una conversación real?"
+    },
+    {
+      "id": "es_historia_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "Cuando llegamos a la estación, el tren ya estaba saliendo."
+    }
+  ],
+  "fr": [
+    {
+      "id": "fr_dialogue_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Camille : On commence maintenant ?\nLucas : Oui, mais d'abord je veux entendre un exemple."
+    },
+    {
+      "id": "fr_lecon_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Écoute le rythme de la phrase et répète-la sans couper les groupes de mots."
+    },
+    {
+      "id": "fr_question_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "Pourquoi cette phrase sonne-t-elle plus naturelle à l'oral ?"
+    },
+    {
+      "id": "fr_histoire_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "Quand nous sommes arrivés à la gare, le train était déjà parti."
+    }
+  ],
+  "de": [
+    {
+      "id": "de_dialog_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Anna: Fangen wir jetzt an?\nBen: Ja, aber zuerst will ich ein Beispiel hören."
+    },
+    {
+      "id": "de_erklaerung_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Achte auf den Sprechrhythmus und wiederhole den Satz ohne harte Pausen zwischen den Wörtern."
+    },
+    {
+      "id": "de_frage_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "Warum klingt dieser Satz in einem echten Gespräch natürlicher?"
+    },
+    {
+      "id": "de_geschichte_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "Als wir am Bahnhof ankamen, war der Zug schon abgefahren."
+    }
+  ],
+  "it": [
+    {
+      "id": "it_dialogo_1",
+      "context_hint": "dialogue",
+      "profile": "chat",
+      "text": "Giulia: Iniziamo adesso?\nMarco: Sì, ma prima voglio sentire un esempio."
+    },
+    {
+      "id": "it_spiegazione_1",
+      "context_hint": "lesson",
+      "profile": "lesson",
+      "text": "Ascolta il ritmo della frase e ripetila senza separare troppo le parole."
+    },
+    {
+      "id": "it_domanda_1",
+      "context_hint": "question",
+      "profile": "question",
+      "text": "Perché questa frase suona più naturale in una conversazione vera?"
+    },
+    {
+      "id": "it_storia_1",
+      "context_hint": "story",
+      "profile": "story",
+      "text": "Quando siamo arrivati alla stazione, il treno era già partito."
+    }
+  ]
+}

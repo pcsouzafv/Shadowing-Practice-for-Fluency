@@ -1,0 +1,136 @@
+{
+  "_notes": [
+    "Os valores em 'base' substituem o baseline por idioma.",
+    "Os valores em 'profiles' sao deltas adicionados ao perfil selecionado.",
+    "As chaves podem ser nome do arquivo .onnx, stem ou caminho."
+  ],
+  "models": {
+    "pt_BR-faber-medium.onnx": {
+      "label": "Português Brasil - Faber",
+      "lang": "pt",
+      "notes": "Levemente mais lento e estável para estudo guiado; conversa curta fica um pouco mais viva.",
+      "base": {
+        "length_scale": 1.02,
+        "noise_scale": 0.64,
+        "noise_w_scale": 0.72,
+        "sentence_silence": 0.15,
+        "volume": 1.03,
+        "normalize_audio": true
+      },
+      "profiles": {
+        "chat": {
+          "length_scale": -0.01,
+          "noise_scale": 0.03,
+          "noise_w_scale": 0.04,
+          "sentence_silence": -0.01
+        },
+        "lesson": {
+          "length_scale": 0.02,
+          "noise_scale": -0.02,
+          "noise_w_scale": -0.02
+        },
+        "story": {
+          "sentence_silence": 0.03,
+          "noise_w_scale": 0.02
+        }
+      }
+    },
+    "en_US-amy-medium.onnx": {
+      "label": "English US - Amy",
+      "lang": "en",
+      "notes": "Fala um pouco mais rapida e brilhante; perguntas e chat ficam mais naturais com menos pausa.",
+      "base": {
+        "length_scale": 0.97,
+        "noise_scale": 0.76,
+        "noise_w_scale": 0.84,
+        "sentence_silence": 0.11,
+        "volume": 1.0,
+        "normalize_audio": true
+      },
+      "profiles": {
+        "chat": {
+          "length_scale": -0.01,
+          "noise_scale": 0.03,
+          "noise_w_scale": 0.03
+        },
+        "question": {
+          "noise_w_scale": 0.04,
+          "sentence_silence": -0.02
+        },
+        "lesson": {
+          "length_scale": 0.01,
+          "noise_scale": -0.03
+        }
+      }
+    },
+    "fr_FR-siwis-medium.onnx": {
+      "label": "Français - Siwis",
+      "lang": "fr",
+      "notes": "Mantem o frances um pouco mais suave e com pausas mais elegantes.",
+      "base": {
+        "length_scale": 1.02,
+        "noise_scale": 0.65,
+        "noise_w_scale": 0.74,
+        "sentence_silence": 0.15,
+        "volume": 1.0,
+        "normalize_audio": true
+      }
+    },
+    "es_ES-sharvard-medium.onnx": {
+      "label": "Español - Sharvard",
+      "lang": "es",
+      "notes": "Equilibrio levemente mais rapido para conversas do dia a dia.",
+      "base": {
+        "length_scale": 0.98,
+        "noise_scale": 0.72,
+        "noise_w_scale": 0.79,
+        "sentence_silence": 0.12,
+        "volume": 1.01,
+        "normalize_audio": true
+      }
+    },
+    "de_DE-thorsten-medium.onnx": {
+      "label": "Deutsch - Thorsten",
+      "lang": "de",
+      "notes": "Pausa um pouco mais longa para clareza e menos tensão em frases didaticas.",
+      "base": {
+        "length_scale": 1.03,
+        "noise_scale": 0.64,
+        "noise_w_scale": 0.72,
+        "sentence_silence": 0.15,
+        "volume": 1.0,
+        "normalize_audio": true
+      }
+    },
+    "it_IT-paola-medium.onnx": {
+      "label": "Italiano - Paola",
+      "lang": "it",
+      "notes": "Italiano um pouco mais ligado e musical; chat reduz pausas, aula ganha clareza.",
+      "base": {
+        "length_scale": 1.0,
+        "noise_scale": 0.68,
+        "noise_w_scale": 0.76,
+        "sentence_silence": 0.13,
+        "volume": 1.0,
+        "normalize_audio": true
+      },
+      "profiles": {
+        "chat": {
+          "length_scale": -0.02,
+          "noise_scale": 0.03,
+          "noise_w_scale": 0.04,
+          "sentence_silence": -0.02
+        },
+        "lesson": {
+          "length_scale": 0.03,
+          "noise_scale": -0.03,
+          "noise_w_scale": -0.03
+        },
+        "question": {
+          "noise_w_scale": 0.04,
+          "sentence_silence": -0.02
+        }
+      }
+    }
+  }
+}

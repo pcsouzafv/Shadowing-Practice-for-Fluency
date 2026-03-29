@@ -1,0 +1,23 @@
+{
+  "_notes": [
+    "Use 'text' para substituicao simples ou 'phonemes' para injetar fonemas crus do espeak-ng.",
+    "As chaves aceitas sao 'global' ou o codigo do idioma: en, pt, es, fr, de."
+  ],
+  "global": [
+    { "match": "OpenAI", "text": "Open A I" },
+    { "match": "ChatGPT", "text": "Chat G P T" },
+    { "match": "GPT", "text": "G P T" },
+    { "match": "API", "text": "A P I" },
+    { "match": "LMNT", "text": "L M N T" },
+    { "match": "YouTube", "text": "You Tube" },
+    { "match": "WhatsApp", "text": "Whats App" },
+    { "match": "OpenRouter", "text": "Open Router" },
+    { "match": "Wi-Fi", "text": "Wi Fi" }
+  ],
+  "pt": [
+    { "match": "Deepgram", "text": "Deep gram" }
+  ],
+  "en": [
+    { "match": "pt_BR", "text": "P T B R" }
+  ]
+}

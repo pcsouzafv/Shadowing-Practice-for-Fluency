@@ -1,0 +1,103 @@
+services:
+  shadowing-practice:
+    image: ${SHADOWING_PRACTICE_IMAGE:-shadowing-practice:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shadowing-practice
+    ports:
+      - "5000:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
+      - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://idiomasbr:idiomasbr123@host.docker.internal:5433/idiomasbr}
+      # WhatsApp — ative com WHATSAPP_ENABLED=1 no .env
+      - WHATSAPP_ENABLED=${WHATSAPP_ENABLED:-0}
+      - EVOLUTION_API_URL=http://evolution-api:8080
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-changeme-secret-key}
+      - EVOLUTION_INSTANCE=${EVOLUTION_INSTANCE:-shadowing}
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./models:/app/models:ro
+      - ./static/audio:/app/static/audio
+    restart: unless-stopped
+    depends_on:
+      evolution-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Evolution API ─────────────────────────────────────────────────────────
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: evolution-api
+    ports:
+      - "8080:8080"
+    environment:
+      # URL pública do servidor (use a URL do ngrok em desenvolvimento local)
+      - SERVER_URL=${EVOLUTION_SERVER_URL:-http://localhost:8080}
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-changeme-secret-key}
+      # Banco de dados
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution@evolution-db:5432/evolution
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_client
+      # Cache (sem Redis — usando cache em memória)
+      - CACHE_REDIS_ENABLED=false
+      - CACHE_LOCAL_ENABLED=true
+      - CACHE_LOCAL_TTL=300
+      # Configurações gerais
+      - DEL_INSTANCE=false
+      - LANGUAGE=pt-BR
+      - LOG_LEVEL=INFO
+      - LOG_COLOR=true
+      # Ajustes de compatibilidade Baileys para geração de QR/pairing
+      # (algumas versões padrão podem ficar em count=0 sem QR)
+      - CONFIG_SESSION_PHONE_VERSION=${CONFIG_SESSION_PHONE_VERSION:-2.3000.1033846690}
+      - CONFIG_SESSION_PHONE_CLIENT=${CONFIG_SESSION_PHONE_CLIENT:-Chrome}
+      - CONFIG_SESSION_PHONE_NAME=${CONFIG_SESSION_PHONE_NAME:-Chrome}
+      - QRCODE_LIMIT=${QRCODE_LIMIT:-180}
+    volumes:
+      - evolution_instances:/evolution/instances
+    depends_on:
+      evolution-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ── PostgreSQL para Evolution API ─────────────────────────────────────────
+  evolution-db:
+    image: postgres:16-alpine
+    container_name: evolution-db
+    environment:
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=evolution
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_db:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  evolution_instances:
+  evolution_db:

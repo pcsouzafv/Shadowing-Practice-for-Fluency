@@ -1,0 +1,15 @@
+flask>=3.0
+click>=8.1,<8.2
+piper-tts>=1.4.1
+pathvalidate>=3.2
+youtube-search>=2.1
+python-dotenv>=1.0
+requests>=2.31
+youtube-transcript-api>=0.6
+yt-dlp>=2025.1.0
+faster-whisper>=1.0.3
+gunicorn>=22.0
+psycopg[binary]>=3.2
+
+# WhatsApp mini-aulas
+APScheduler>=3.10.4
