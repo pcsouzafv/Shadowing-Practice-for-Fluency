@@ -29,6 +29,7 @@ import xml.etree.ElementTree as ET
 import tempfile
 import subprocess
 import sys
+import shutil
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -266,96 +267,108 @@ PIPER_CONTEXTUAL_ENABLED = (
     os.getenv("PIPER_CONTEXTUAL_ENABLED", "1").strip().lower()
     not in {"0", "false", "no"}
 )
+PIPER_POSTPROCESS_ENABLED = (
+    os.getenv("PIPER_POSTPROCESS_ENABLED", "1").strip().lower()
+    not in {"0", "false", "no"}
+)
+PIPER_POSTPROCESS_FILTER = os.getenv(
+    "PIPER_POSTPROCESS_FILTER",
+    "highpass=f=55,lowpass=f=7600,afftdn=nf=-24:tn=1",
+).strip()
+PIPER_POSTPROCESS_TIMEOUT_SEC = max(
+    5,
+    int(os.getenv("PIPER_POSTPROCESS_TIMEOUT_SEC", "25") or "25"),
+)
 PIPER_PROSODY_BASE_BY_LANG = {
     "default": {
         "length_scale": 1.0,
-        "noise_scale": 0.72,
-        "noise_w_scale": 0.8,
+        "noise_scale": 0.56,
+        "noise_w_scale": 0.62,
         "sentence_silence": 0.14,
         "volume": 1.0,
-        "normalize_audio": True,
+        "normalize_audio": False,
     },
     "en": {
         "length_scale": 0.98,
-        "noise_scale": 0.74,
-        "noise_w_scale": 0.82,
+        "noise_scale": 0.58,
+        "noise_w_scale": 0.64,
         "sentence_silence": 0.12,
         "volume": 1.0,
-        "normalize_audio": True,
+        "normalize_audio": False,
     },
     "pt": {
         "length_scale": 1.0,
-        "noise_scale": 0.68,
-        "noise_w_scale": 0.78,
+        "noise_scale": 0.54,
+        "noise_w_scale": 0.60,
         "sentence_silence": 0.14,
-        "volume": 1.02,
-        "normalize_audio": True,
+        "volume": 1.0,
+        "normalize_audio": False,
     },
     "es": {
         "length_scale": 0.99,
-        "noise_scale": 0.7,
-        "noise_w_scale": 0.78,
+        "noise_scale": 0.56,
+        "noise_w_scale": 0.62,
         "sentence_silence": 0.13,
-        "volume": 1.01,
-        "normalize_audio": True,
+        "volume": 1.0,
+        "normalize_audio": False,
     },
     "fr": {
         "length_scale": 1.01,
-        "noise_scale": 0.67,
-        "noise_w_scale": 0.76,
+        "noise_scale": 0.53,
+        "noise_w_scale": 0.59,
         "sentence_silence": 0.14,
         "volume": 1.0,
-        "normalize_audio": True,
+        "normalize_audio": False,
     },
     "de": {
         "length_scale": 1.02,
-        "noise_scale": 0.66,
-        "noise_w_scale": 0.75,
+        "noise_scale": 0.53,
+        "noise_w_scale": 0.59,
         "sentence_silence": 0.14,
         "volume": 1.0,
-        "normalize_audio": True,
+        "normalize_audio": False,
     },
     "it": {
         "length_scale": 1.0,
-        "noise_scale": 0.69,
-        "noise_w_scale": 0.77,
+        "noise_scale": 0.55,
+        "noise_w_scale": 0.61,
         "sentence_silence": 0.13,
         "volume": 1.0,
-        "normalize_audio": True,
+        "normalize_audio": False,
     },
 }
 PIPER_PROFILE_ADJUSTMENTS = {
     "balanced": {},
     "chat": {
         "length_scale": -0.04,
-        "noise_scale": 0.1,
-        "noise_w_scale": 0.09,
+        "noise_scale": 0.02,
+        "noise_w_scale": 0.01,
         "sentence_silence": -0.05,
     },
     "lesson": {
         "length_scale": 0.06,
-        "noise_scale": -0.06,
-        "noise_w_scale": -0.08,
+        "noise_scale": -0.04,
+        "noise_w_scale": -0.05,
         "sentence_silence": 0.04,
     },
     "story": {
-        "length_scale": 0.05,
-        "noise_scale": 0.04,
-        "noise_w_scale": 0.03,
-        "sentence_silence": 0.08,
+        "length_scale": 0.04,
+        "noise_scale": -0.02,
+        "noise_w_scale": -0.02,
+        "sentence_silence": 0.07,
     },
     "question": {
         "length_scale": -0.01,
-        "noise_scale": 0.04,
-        "noise_w_scale": 0.12,
-        "sentence_silence": -0.04,
+        "noise_scale": 0.0,
+        "noise_w_scale": 0.02,
+        "sentence_silence": -0.03,
     },
     "expressive": {
         "length_scale": -0.03,
-        "noise_scale": 0.14,
-        "noise_w_scale": 0.16,
+        "noise_scale": 0.03,
+        "noise_w_scale": 0.04,
         "sentence_silence": -0.02,
-        "volume": 0.04,
+        "volume": 0.02,
     },
 }
 PIPER_PROFILE_LABELS = {
@@ -365,6 +378,14 @@ PIPER_PROFILE_LABELS = {
     "story": "narracao",
     "question": "pergunta",
     "expressive": "expressivo",
+}
+PIPER_DEFAULT_PROFILE_BY_CONTEXT = {
+    "conversation_reply": "chat",
+    "single_phrase": "lesson",
+    "study_phrase": "lesson",
+    "shadowing_sentence": "lesson",
+    "shadowing_practice_session": "story",
+    "youtube_study_phrase": "lesson",
 }
 PIPER_QUESTION_PREFIXES = {
     "en": (
@@ -3132,6 +3153,14 @@ def _extract_piper_request_options(data: dict | None = None) -> dict[str, Any]:
     if config_path is not None:
         options["config_path"] = str(config_path).strip()
 
+    postprocess_filter = first_present(
+        nested.get("postprocess_filter"),
+        payload.get("piper_postprocess_filter"),
+        payload.get("postprocess_filter"),
+    )
+    if postprocess_filter is not None:
+        options["postprocess_filter"] = str(postprocess_filter).strip()
+
     return options
 
 
@@ -3139,10 +3168,18 @@ def _build_piper_request_options(
     data: dict | None = None,
     *,
     default_context_hint: str = "",
+    default_profile: str = "auto",
 ) -> dict[str, Any]:
     options = _extract_piper_request_options(data)
     if default_context_hint and not options.get("context_hint"):
         options["context_hint"] = default_context_hint
+    if options.get("profile") in {None, "", "auto"}:
+        chosen_profile = _normalize_piper_profile(default_profile, default="auto")
+        if chosen_profile == "auto":
+            context_hint = str(options.get("context_hint") or "").strip().lower().replace("-", "_")
+            chosen_profile = PIPER_DEFAULT_PROFILE_BY_CONTEXT.get(context_hint, "auto")
+        if chosen_profile != "auto":
+            options["profile"] = chosen_profile
     return options
 
 
@@ -3324,6 +3361,12 @@ def _resolve_piper_voice_override(
                 "lang": _normalize_lang(item.get("lang"), default=lang),
                 "base": item.get("base", {}) if isinstance(item.get("base"), dict) else {},
                 "profiles": item.get("profiles", {}) if isinstance(item.get("profiles"), dict) else {},
+                "postprocess_filter": str(item.get("postprocess_filter") or "").strip(),
+                "postprocess_filters": (
+                    item.get("postprocess_filters")
+                    if isinstance(item.get("postprocess_filters"), dict)
+                    else {}
+                ),
                 "notes": item.get("notes", ""),
             }
     return {}
@@ -3491,7 +3534,7 @@ def _build_piper_settings(
     if word_count <= 10 and profile in {"chat", "question"}:
         settings["length_scale"] -= 0.02
     if "?" in str(text or ""):
-        settings["noise_w_scale"] += 0.03
+        settings["noise_w_scale"] += 0.01
 
     options = request_options or {}
     settings["length_scale"] = _clamp_float_option(
@@ -3547,7 +3590,111 @@ def _public_piper_meta(result: dict[str, Any] | None = None) -> dict[str, Any]:
         "model_path": payload.get("model_path", ""),
         "model_id": payload.get("model_id", ""),
         "voice_tuning": payload.get("voice_tuning", {}),
+        "postprocess": payload.get("postprocess", {}),
     }
+
+
+def _resolve_piper_postprocess_filter(
+    *,
+    request_options: dict[str, Any] | None = None,
+    voice_override: dict[str, Any] | None = None,
+    profile: str = "balanced",
+) -> str:
+    options = request_options if isinstance(request_options, dict) else {}
+    voice = voice_override if isinstance(voice_override, dict) else {}
+
+    explicit_filter = str(options.get("postprocess_filter") or "").strip()
+    if explicit_filter:
+        return explicit_filter
+
+    profile_filters = voice.get("postprocess_filters", {})
+    if isinstance(profile_filters, dict):
+        scoped_filter = str(profile_filters.get(profile) or "").strip()
+        if scoped_filter:
+            return scoped_filter
+
+    voice_filter = str(voice.get("postprocess_filter") or "").strip()
+    if voice_filter:
+        return voice_filter
+
+    return PIPER_POSTPROCESS_FILTER
+
+
+def _ffmpeg_bin() -> str:
+    cached = getattr(_ffmpeg_bin, "_cache", None)
+    if cached is not None:
+        return cached
+    resolved = shutil.which("ffmpeg") or ""
+    _ffmpeg_bin._cache = resolved
+    return resolved
+
+
+def _postprocess_piper_audio(output_path: Path, *, filter_spec: str = "") -> dict[str, Any]:
+    if not PIPER_POSTPROCESS_ENABLED:
+        return {"ok": False, "reason": "disabled"}
+    effective_filter = str(filter_spec or "").strip() or PIPER_POSTPROCESS_FILTER
+    if not effective_filter:
+        return {"ok": False, "reason": "filter_missing"}
+    ffmpeg_bin = _ffmpeg_bin()
+    if not ffmpeg_bin:
+        return {"ok": False, "reason": "ffmpeg_unavailable"}
+    if not output_path.exists() or output_path.stat().st_size <= 0:
+        return {"ok": False, "reason": "file_missing"}
+
+    temp_path = output_path.with_name(f"{output_path.stem}.post{output_path.suffix}")
+    cmd = [
+        ffmpeg_bin,
+        "-y",
+        "-loglevel",
+        "error",
+        "-i",
+        str(output_path),
+        "-af",
+        effective_filter,
+        "-ac",
+        "1",
+        "-ar",
+        "22050",
+        "-c:a",
+        "pcm_s16le",
+        str(temp_path),
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=PIPER_POSTPROCESS_TIMEOUT_SEC,
+            check=False,
+        )
+        if result.returncode != 0:
+            return {
+                "ok": False,
+                "reason": "ffmpeg_failed",
+                "error": (result.stderr or result.stdout or "").strip()[:220],
+                "filter": effective_filter,
+            }
+        if not temp_path.exists() or temp_path.stat().st_size <= 0:
+            return {
+                "ok": False,
+                "reason": "empty_output",
+                "filter": effective_filter,
+            }
+        temp_path.replace(output_path)
+        return {
+            "ok": True,
+            "filter": effective_filter,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "reason": "exception",
+            "error": str(exc)[:220],
+            "filter": effective_filter,
+        }
+    finally:
+        if temp_path.exists():
+            temp_path.unlink(missing_ok=True)
 
 
 def piper_synthesize_to_file(
@@ -3622,6 +3769,11 @@ def piper_synthesize_to_file(
         request_options=options,
     )
     voice_override = settings.pop("_voice_override", {}) if isinstance(settings, dict) else {}
+    postprocess_filter = _resolve_piper_postprocess_filter(
+        request_options=options,
+        voice_override=voice_override,
+        profile=selected_profile,
+    )
 
     speaker_id = _coerce_int(
         options.get("speaker_id", os.getenv("PIPER_SPEAKER", "0")),
@@ -3667,10 +3819,11 @@ def piper_synthesize_to_file(
         "config_path": str(config_path),
         "model_id": model_path.stem,
         "voice_tuning": {
-            "label": voice_override.get("label", ""),
-            "key": voice_override.get("key", ""),
-            "notes": voice_override.get("notes", ""),
-        } if voice_override else {},
+                "label": voice_override.get("label", ""),
+                "key": voice_override.get("key", ""),
+                "notes": voice_override.get("notes", ""),
+                "postprocess_filter": postprocess_filter,
+            } if voice_override else {},
     })
 
     try:
@@ -3692,6 +3845,14 @@ def piper_synthesize_to_file(
         meta["ok"] = output_path.exists() and output_path.stat().st_size > 0
         if not meta["ok"]:
             meta["error"] = "Piper não gerou arquivo de áudio."
+            return meta
+        postprocess = _postprocess_piper_audio(output_path, filter_spec=postprocess_filter)
+        meta["postprocess"] = postprocess
+        if postprocess.get("ok"):
+            meta["transformations"] = [
+                *meta.get("transformations", []),
+                "audio_postprocessed",
+            ]
         return meta
     except Exception as exc:
         print(f"[Piper] Exceção: {exc}")
@@ -4322,6 +4483,26 @@ def _extract_transcript_by_mode(video_id: str,
     return transcript, extract_errors
 
 
+def _is_youtube_access_blocked_error(exc: Exception) -> bool:
+    if not exc:
+        return False
+    name = exc.__class__.__name__.strip().lower()
+    message = str(exc or "").strip().lower()
+    haystack = f"{name} {message}"
+    markers = (
+        "sign in to confirm you're not a bot",
+        "sign in to confirm you’re not a bot",
+        "too many requests",
+        "http error 429",
+        "requestblocked",
+        "ipblocked",
+        "youtube is blocking requests from your ip",
+        "use --cookies-from-browser",
+        "use --cookies",
+    )
+    return any(marker in haystack for marker in markers)
+
+
 def _build_transcript_error_response(extract_errors: list) -> tuple[dict, int]:
     names = {exc.__class__.__name__ for exc in extract_errors}
     if "VideoUnavailable" in names:
@@ -4336,6 +4517,14 @@ def _build_transcript_error_response(extract_errors: list) -> tuple[dict, int]:
             "error": "Sem legendas disponíveis no idioma solicitado. "
                      "Tente mudar o idioma ou usar outro vídeo."
         }, 404
+    if any(_is_youtube_access_blocked_error(exc) for exc in extract_errors):
+        return {
+            "error": "O YouTube bloqueou a extração automática neste ambiente "
+                     "(bot check / 429 / bloqueio de IP). Isso acontece com "
+                     "mais frequência em Docker e servidores. Tente rodar a "
+                     "aplicação fora do container, aguardar alguns minutos, "
+                     "ou configurar cookies do YouTube para o yt-dlp."
+        }, 429
 
     for exc in extract_errors:
         if isinstance(exc, ValueError):
@@ -5322,7 +5511,8 @@ def generate_session():
     lang = _normalize_lang(data.get("lang"), default=detected_lang)
     piper_options = _build_piper_request_options(
         data,
-        default_context_hint="practice_session",
+        default_context_hint="shadowing_practice_session",
+        default_profile="story",
     )
     learner = _build_learner_context(data, default_lang=lang)
     voice = _normalize_text_field(
@@ -5463,7 +5653,8 @@ def text_to_speech():
     lang = _normalize_lang(data.get("lang"), default="en")
     piper_options = _build_piper_request_options(
         data,
-        default_context_hint="single_phrase",
+        default_context_hint="study_phrase",
+        default_profile="lesson",
     )
     voice = _normalize_text_field(
         data.get("voice", "leah"),
@@ -6291,6 +6482,7 @@ def voice_conversation():
     piper_options = _build_piper_request_options(
         data,
         default_context_hint="conversation_reply",
+        default_profile="chat",
     )
     suggest  = _coerce_bool(data.get("suggest", False), default=False)
 

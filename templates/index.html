@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎧 Shadowing Practice for Fluency</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20260303a">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Shadowing Practice for Fluency</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=20260329a">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-postech">
 
     <header class="header">
         <div class="header-content">
-            <h1>🎧 Shadowing Practice</h1>
-            <p class="subtitle">LMNT + Piper local + Análise IA + Vídeos virais</p>
+            <div class="header-brand">
+                <p class="header-kicker">Shadowing Practice Fluency System</p>
+                <h1>Shadowing Practice</h1>
+            </div>
+            <p class="subtitle">Karaoke sincronizado, voz neural, IA aplicada e repetição intensiva para fluência oral real.</p>
         </div>
         <nav class="tabs">
-            <button class="tab active" data-tab="practice">🗣️ Praticar</button>
-            <button class="tab" data-tab="ai-tools">🤖 IA Tools</button>
-            <button class="tab" data-tab="conversation">💬 Conversar</button>
-            <button class="tab" data-tab="progress">📊 Progresso</button>
+            <button class="tab active" data-tab="practice">Practice Lab</button>
+            <button class="tab" data-tab="ai-tools">AI Tools</button>
+            <button class="tab" data-tab="conversation">Conversation</button>
+            <button class="tab" data-tab="progress">Progress</button>
         </nav>
     </header>
 
@@ -27,8 +30,57 @@
         <!-- ═══ TAB: PRATICAR ═══════════════════════════════ -->
         <section id="tab-practice" class="tab-content active">
 
-            <div class="card">
-                <h2>📝 Insira o texto para shadowing</h2>
+            <div class="practice-hero card">
+                <div class="practice-hero-grid">
+                    <div class="practice-hero-copy">
+                        <p class="hero-eyebrow"><span>01</span> TECH-INTENSIVE ORAL FLUENCY</p>
+                        <h2 class="practice-hero-title">TREINE FLUÊNCIA COM SOM, TEXTO, KARAOKE E IA NO MESMO LOOP</h2>
+                        <p class="practice-hero-text">
+                            Uma experiência de shadowing pensada para transformar repetição em progresso visível:
+                            áudio sincronizado, gravação, comparação, missão guiada e laboratório de transcrição do YouTube.
+                        </p>
+                        <div class="practice-hero-stats">
+                            <div class="hero-stat">
+                                <span class="hero-stat-value">LMNT + PIPER</span>
+                                <span class="hero-stat-label">voz neural e fallback local</span>
+                            </div>
+                            <div class="hero-stat">
+                                <span class="hero-stat-value">KARAOKE + YT LAB</span>
+                                <span class="hero-stat-label">texto correndo junto da fala</span>
+                            </div>
+                            <div class="hero-stat">
+                                <span class="hero-stat-value">MISSION CONTROL</span>
+                                <span class="hero-stat-label">rotina guiada de prática</span>
+                            </div>
+                        </div>
+                        <div class="practice-hero-actions">
+                            <a class="btn btn-primary" href="#practice-composer">COMEÇAR SESSÃO</a>
+                            <a class="btn btn-ghost" href="#yt-lab-anchor">ABRIR YOUTUBE KARAOKE</a>
+                        </div>
+                    </div>
+                    <div class="practice-hero-panel">
+                        <p class="hero-panel-kicker">Deep Practice Stack</p>
+                        <ul class="hero-panel-list">
+                            <li>Texto sincronizado em tempo real com o áudio principal</li>
+                            <li>Fases de estudo guiadas do aquecimento até a gravação</li>
+                            <li>Estudo frase por frase com tradução, pronúncia e vocabulário</li>
+                            <li>Vídeos relacionados para ampliar repertório com conteúdo real</li>
+                        </ul>
+                        <div class="hero-panel-foot">
+                            Projetado para manter o backend intacto e elevar a experiência visual.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="practice-composer" class="card composer-card">
+                <div class="section-heading">
+                    <span class="section-number">02</span>
+                    <div>
+                        <p class="section-kicker">Build Your Session</p>
+                        <h2>Insira o texto para shadowing</h2>
+                    </div>
+                </div>
                 <textarea id="input-text" rows="5"
                     placeholder="Cole aqui o texto em inglês que deseja praticar...&#10;&#10;Ex: The key to fluency is consistent daily practice. Even just two minutes a day over thirty days will show noticeable results."></textarea>
 
@@ -70,7 +122,7 @@
                     <span id="word-count" class="word-count">0 palavras · 0 caracteres</span>
                 </div>
 
-                <div class="action-row">
+                <div class="action-row hero-action-row">
                     <button id="btn-generate" class="btn btn-primary">
                         🚀 Gerar Sessão
                     </button>
@@ -100,7 +152,7 @@
             <!-- Resultado: Áudio + Texto -->
             <div id="result-section" class="hidden">
 
-                <div class="card">
+                <div class="card stage-card">
                     <div class="card-header-row">
                         <h2>🔊 Áudio para Shadowing</h2>
                         <span class="engine-badge" id="engine-badge"></span>
@@ -133,7 +185,7 @@
                     </div>
                 </div>
 
-                <div class="card karaoke-card">
+                <div class="card karaoke-card stage-card">
                     <h2>📖 Texto Sincronizado</h2>
                     <p class="hint">▶ Dê play no áudio — o texto acompanha a fala em tempo real</p>
                     <div id="karaoke-text" class="karaoke-text"></div>
@@ -142,7 +194,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card stage-card">
                     <h2>🎙️ Grave e Compare</h2>
                     <div class="recording-section">
                         <button id="btn-record" class="btn btn-record">
@@ -154,14 +206,14 @@
                     <div id="recordings-list" class="recordings-list"></div>
                 </div>
 
-                <div class="card">
+                <div class="card stage-card">
                     <h2>🎬 Vídeos Virais Relacionados</h2>
                     <p class="hint">Use estes vídeos para shadowing avançado com conteúdo real</p>
                     <div id="videos-grid" class="videos-grid"></div>
                 </div>
             </div>
 
-            <div class="card yt-karaoke-card">
+            <div id="yt-lab-anchor" class="card yt-karaoke-card">
                 <div class="card-header-row">
                     <h2>🎤 YouTube Karaoke Lab</h2>
                     <span id="yt-karaoke-track-meta" class="badge badge-sm hidden"></span>
@@ -401,57 +453,6 @@
                 <h2>🧩 Status das APIs</h2>
                 <p class="hint">Confira rapidamente quais integrações estão ativas no momento</p>
                 <div class="api-badges" id="api-badges"></div>
-            </div>
-
-            <div class="card card-ai">
-                <div class="card-header-row">
-                    <h2>📱 WhatsApp Module</h2>
-                    <div class="action-row">
-                        <button id="btn-wa-status" class="btn btn-sm btn-ghost">🔄 Atualizar status</button>
-                        <button id="btn-wa-students" class="btn btn-sm btn-ghost">👥 Alunos</button>
-                    </div>
-                </div>
-                <p class="hint">Configure e monitore o assistente professor do WhatsApp direto nesta aba.</p>
-
-                <div id="wa-status-badges" class="api-badges"></div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="wa-webhook-url">Webhook URL (opcional)</label>
-                        <input
-                            type="text"
-                            id="wa-webhook-url"
-                            placeholder="https://seu-dominio.com/whatsapp/webhook"
-                        >
-                    </div>
-                    <div class="form-group wa-actions-wrap">
-                        <label>&nbsp;</label>
-                        <div class="action-row">
-                            <button id="btn-wa-setup" class="btn btn-primary">⚙️ Configurar instância</button>
-                            <button id="btn-wa-qrcode" class="btn btn-lmnt">🔳 Carregar QR Code</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="wa-feedback" class="hint"></div>
-
-                <div id="wa-qr-section" class="wa-qr-section hidden">
-                    <h3>QR Code do WhatsApp</h3>
-                    <p class="hint">Escaneie no celular em WhatsApp → Aparelhos conectados → Conectar aparelho.</p>
-                    <img id="wa-qr-image" class="wa-qr-image hidden" alt="QR Code do WhatsApp">
-                    <pre id="wa-qr-raw" class="wa-json hidden"></pre>
-                </div>
-
-                <div class="wa-panels">
-                    <div class="wa-panel">
-                        <h3>Status detalhado</h3>
-                        <pre id="wa-status-json" class="wa-json">Clique em "Atualizar status".</pre>
-                    </div>
-                    <div class="wa-panel">
-                        <h3>Alunos cadastrados</h3>
-                        <pre id="wa-students-json" class="wa-json">Clique em "Alunos".</pre>
-                    </div>
-                </div>
             </div>
 
             <div class="card card-ai">
@@ -790,6 +791,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=20260303b"></script>
+    <script src="/static/js/app.js?v=20260329c"></script>
 </body>
 </html>

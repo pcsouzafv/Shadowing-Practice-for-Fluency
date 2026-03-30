@@ -161,6 +161,28 @@ function getTtsLoadingMessage(engine) {
     return '🖥️ Gerando áudio local com Piper...';
 }
 
+function inferPiperPracticeProfile(text, fallbackProfile = 'lesson') {
+    const normalized = String(text || '').trim();
+    if (!normalized) return fallbackProfile;
+    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+    const sentenceCount = (normalized.match(/[.!?。！？]+/g) || []).length;
+
+    // For long passages, keep the stable fallback profile instead of
+    // promoting the whole block to "question" just because it ends with "?".
+    if (wordCount > 18 || sentenceCount > 1) return fallbackProfile;
+
+    if (/[?？]\s*$/.test(normalized)) return 'question';
+    if (/[!！]\s*$/.test(normalized)) return 'expressive';
+    return fallbackProfile;
+}
+
+function buildPiperPracticePayload(text, contextHint, fallbackProfile = 'lesson') {
+    return {
+        tts_context: contextHint,
+        piper_profile: inferPiperPracticeProfile(text, fallbackProfile),
+    };
+}
+
 function extractApiErrorMessage(data, fallback = 'Erro na requisição.') {
     if (!data) return fallback;
     if (typeof data === 'string') return data;
@@ -552,16 +574,41 @@ async function loadWhatsAppStudents() {
 }
 
 // ─── Tabs ──────────────────────────────────────────────────
+function scrollAppToTop() {
+    const activeTab = document.querySelector('.tab-content.active');
+    const targetTop = activeTab
+        ? Math.max(0, activeTab.getBoundingClientRect().top + window.scrollY - 16)
+        : 0;
+    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth';
+    const performScroll = () => {
+        window.scrollTo({ top: targetTop, behavior });
+        document.documentElement?.scrollTo?.({ top: targetTop, behavior });
+        document.body?.scrollTo?.({ top: targetTop, behavior });
+        activeTab?.scrollIntoView?.({ behavior, block: 'start' });
+    };
+
+    requestAnimationFrame(() => {
+        performScroll();
+    });
+
+    setTimeout(performScroll, 180);
+}
+
 $$('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('click', async () => {
         $$('.tab').forEach(t => t.classList.remove('active'));
         $$('.tab-content').forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
         const activeTab = $(`#tab-${tab.dataset.tab}`);
         activeTab.classList.add('active');
         animateStaggerElements(activeTab.querySelectorAll('.card'), 'is-revealing', 24);
-        if (tab.dataset.tab === 'progress') loadProgress();
-        if (tab.dataset.tab === 'ai-tools') refreshWhatsAppStatus({ showSuccess: false });
+        scrollAppToTop();
+        if (tab.dataset.tab === 'progress') {
+            await loadProgress();
+            scrollAppToTop();
+        }
     });
 });
 
@@ -590,13 +637,14 @@ $('#btn-generate').addEventListener('click', async () => {
     const lang = $('#lang-select').value || undefined;
     const voice = $('#voice-select').value;
     const ttsEngine = getSelectedTtsEngine();
+    const piperPayload = buildPiperPracticePayload(text, 'shadowing_practice_session', 'story');
 
     show('#loading'); hide('#result-section'); hide('#analysis-section');
     $('#loading-text').textContent = getTtsLoadingMessage(ttsEngine);
     $('#btn-generate').disabled = true;
 
     try {
-        const requestPayload = { text, lang, voice, tts_engine: ttsEngine };
+        const requestPayload = { text, lang, voice, tts_engine: ttsEngine, ...piperPayload };
         const { result } = await runAgentWithFallback({
             intent: 'practice',
             query: 'gerar sessão de prática',
@@ -744,13 +792,14 @@ $('#btn-combo').addEventListener('click', async () => {
     const lang = $('#lang-select').value || undefined;
     const voice = $('#voice-select').value;
     const ttsEngine = getSelectedTtsEngine();
+    const piperPayload = buildPiperPracticePayload(text, 'shadowing_practice_session', 'story');
 
     show('#loading'); hide('#result-section'); hide('#analysis-section');
     $('#loading-text').textContent = `⚡ ${getTtsLoadingMessage(ttsEngine).replace('...', '')} + análise IA em paralelo...`;
     $('#btn-combo').disabled = true;
 
     try {
-        const sessionPayload = { text, lang, voice, tts_engine: ttsEngine };
+        const sessionPayload = { text, lang, voice, tts_engine: ttsEngine, ...piperPayload };
         const analysisPayload = { text, lang: lang || 'en' };
         const [genOutcome, anaOutcome] = await Promise.allSettled([
             runAgentWithFallback({
@@ -829,15 +878,20 @@ function renderSession(data) {
     if (data.tts_engine === 'lmnt') {
         badge.textContent = '🎙️ LMNT Natural Voice';
         badge.className = 'engine-badge badge-lmnt';
+        badge.title = '';
     } else if (data.tts_engine === 'deepgram') {
         badge.textContent = '🧠 Deepgram Aura-2';
         badge.className = 'engine-badge badge-deepgram';
+        badge.title = '';
     } else if (data.tts_engine === 'piper') {
         badge.textContent = '🖥️ Piper (Local)';
         badge.className = 'engine-badge badge-local';
+        const profileLabel = data.piper_meta?.profile_label || '';
+        badge.title = profileLabel ? `Piper · perfil ${profileLabel}` : 'Piper local';
     } else {
         badge.textContent = '🔊 TTS Local';
         badge.className = 'engine-badge badge-local';
+        badge.title = '';
     }
 
     // Audio
@@ -2297,7 +2351,8 @@ async function playYouTubeStudyAudio(button, text, lang) {
     const voice = $('#voice-select')?.value || 'leah';
     const sourceLang = String(lang || yk.transcriptMeta?.language_code || 'en').trim().toLowerCase() || 'en';
     const ttsEngine = getSelectedTtsEngine();
-    const cacheKey = `ytstudy_${phraseText}_${sourceLang}_${voice}_${ttsEngine}`;
+    const piperPayload = buildPiperPracticePayload(phraseText, 'youtube_study_phrase', 'lesson');
+    const cacheKey = `ytstudy_${phraseText}_${sourceLang}_${voice}_${ttsEngine}_${piperPayload.piper_profile}_${piperPayload.tts_context}`;
 
     button.disabled = true;
     button.classList.add('is-loading');
@@ -2314,6 +2369,7 @@ async function playYouTubeStudyAudio(button, text, lang) {
                     lang: sourceLang,
                     voice,
                     tts_engine: ttsEngine,
+                    ...piperPayload,
                 }),
             });
             const data = await res.json();
@@ -2433,7 +2489,8 @@ async function playSentence(text, lang, voice, el) {
 
     // Check cache first
     const ttsEngine = getSelectedTtsEngine();
-    const cacheKey = `${text}_${lang}_${voice}_${ttsEngine}`;
+    const piperPayload = buildPiperPracticePayload(text, 'shadowing_sentence', 'lesson');
+    const cacheKey = `${text}_${lang}_${voice}_${ttsEngine}_${piperPayload.piper_profile}_${piperPayload.tts_context}`;
     if (state.ttsCache[cacheKey]) {
         currentSentenceAudio = new Audio(state.ttsCache[cacheKey]);
         currentSentenceAudio.play();
@@ -2450,6 +2507,7 @@ async function playSentence(text, lang, voice, el) {
                 lang,
                 voice: voice || $('#voice-select').value,
                 tts_engine: ttsEngine,
+                ...piperPayload,
             }),
         });
         const data = await res.json();

@@ -11,27 +11,27 @@
       "notes": "Levemente mais lento e estável para estudo guiado; conversa curta fica um pouco mais viva.",
       "base": {
         "length_scale": 1.02,
-        "noise_scale": 0.64,
-        "noise_w_scale": 0.72,
+        "noise_scale": 0.52,
+        "noise_w_scale": 0.58,
         "sentence_silence": 0.15,
-        "volume": 1.03,
-        "normalize_audio": true
+        "volume": 1.0,
+        "normalize_audio": false
       },
       "profiles": {
         "chat": {
           "length_scale": -0.01,
-          "noise_scale": 0.03,
-          "noise_w_scale": 0.04,
+          "noise_scale": 0.02,
+          "noise_w_scale": 0.02,
           "sentence_silence": -0.01
         },
         "lesson": {
           "length_scale": 0.02,
           "noise_scale": -0.02,
-          "noise_w_scale": -0.02
+          "noise_w_scale": -0.03
         },
         "story": {
           "sentence_silence": 0.03,
-          "noise_w_scale": 0.02
+          "noise_w_scale": 0.01
         }
       }
     },
@@ -39,27 +39,29 @@
       "label": "English US - Amy",
       "lang": "en",
       "notes": "Fala um pouco mais rapida e brilhante; perguntas e chat ficam mais naturais com menos pausa.",
+      "postprocess_filter": "highpass=f=60,lowpass=f=6900,afftdn=nf=-28:tn=1",
       "base": {
         "length_scale": 0.97,
-        "noise_scale": 0.76,
-        "noise_w_scale": 0.84,
+        "noise_scale": 0.54,
+        "noise_w_scale": 0.6,
         "sentence_silence": 0.11,
         "volume": 1.0,
-        "normalize_audio": true
+        "normalize_audio": false
       },
       "profiles": {
         "chat": {
           "length_scale": -0.01,
-          "noise_scale": 0.03,
-          "noise_w_scale": 0.03
+          "noise_scale": 0.01,
+          "noise_w_scale": 0.01
         },
         "question": {
-          "noise_w_scale": 0.04,
+          "noise_w_scale": 0.01,
           "sentence_silence": -0.02
         },
         "lesson": {
           "length_scale": 0.01,
-          "noise_scale": -0.03
+          "noise_scale": -0.03,
+          "noise_w_scale": -0.02
         }
       }
     },
@@ -67,13 +69,14 @@
       "label": "Français - Siwis",
       "lang": "fr",
       "notes": "Mantem o frances um pouco mais suave e com pausas mais elegantes.",
+      "postprocess_filter": "highpass=f=60,lowpass=f=6800,afftdn=nf=-29:tn=1",
       "base": {
         "length_scale": 1.02,
-        "noise_scale": 0.65,
-        "noise_w_scale": 0.74,
+        "noise_scale": 0.5,
+        "noise_w_scale": 0.56,
         "sentence_silence": 0.15,
         "volume": 1.0,
-        "normalize_audio": true
+        "normalize_audio": false
       }
     },
     "es_ES-sharvard-medium.onnx": {
@@ -82,11 +85,11 @@
       "notes": "Equilibrio levemente mais rapido para conversas do dia a dia.",
       "base": {
         "length_scale": 0.98,
-        "noise_scale": 0.72,
-        "noise_w_scale": 0.79,
+        "noise_scale": 0.56,
+        "noise_w_scale": 0.62,
         "sentence_silence": 0.12,
-        "volume": 1.01,
-        "normalize_audio": true
+        "volume": 1.0,
+        "normalize_audio": false
       }
     },
     "de_DE-thorsten-medium.onnx": {
@@ -95,30 +98,31 @@
       "notes": "Pausa um pouco mais longa para clareza e menos tensão em frases didaticas.",
       "base": {
         "length_scale": 1.03,
-        "noise_scale": 0.64,
-        "noise_w_scale": 0.72,
+        "noise_scale": 0.52,
+        "noise_w_scale": 0.58,
         "sentence_silence": 0.15,
         "volume": 1.0,
-        "normalize_audio": true
+        "normalize_audio": false
       }
     },
     "it_IT-paola-medium.onnx": {
       "label": "Italiano - Paola",
       "lang": "it",
       "notes": "Italiano um pouco mais ligado e musical; chat reduz pausas, aula ganha clareza.",
+      "postprocess_filter": "highpass=f=58,lowpass=f=7100,afftdn=nf=-27:tn=1",
       "base": {
         "length_scale": 1.0,
-        "noise_scale": 0.68,
-        "noise_w_scale": 0.76,
+        "noise_scale": 0.52,
+        "noise_w_scale": 0.58,
         "sentence_silence": 0.13,
         "volume": 1.0,
-        "normalize_audio": true
+        "normalize_audio": false
       },
       "profiles": {
         "chat": {
           "length_scale": -0.02,
-          "noise_scale": 0.03,
-          "noise_w_scale": 0.04,
+          "noise_scale": 0.01,
+          "noise_w_scale": 0.01,
           "sentence_silence": -0.02
         },
         "lesson": {
@@ -127,7 +131,7 @@
           "noise_w_scale": -0.03
         },
         "question": {
-          "noise_w_scale": 0.04,
+          "noise_w_scale": 0.02,
           "sentence_silence": -0.02
         }
       }
