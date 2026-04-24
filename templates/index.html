@@ -4,18 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shadowing Practice for Fluency</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20260329a">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260424a">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body class="theme-postech">
 
     <header class="header">
         <div class="header-content">
-            <div class="header-brand">
-                <p class="header-kicker">Shadowing Practice Fluency System</p>
-                <h1>Shadowing Practice</h1>
+            <div class="header-top-row">
+                <div class="header-brand">
+                    <p class="header-kicker">Shadowing Practice Fluency System</p>
+                    <h1>Shadowing Practice</h1>
+                </div>
+                <label class="ui-lang-switch" for="ui-lang-select">
+                    <span id="ui-lang-label">Interface</span>
+                    <select id="ui-lang-select" aria-label="Interface language">
+                        <option value="pt">🇧🇷 Português</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                        <option value="it">🇮🇹 Italiano</option>
+                    </select>
+                </label>
             </div>
-            <p class="subtitle">Karaoke sincronizado, voz neural, IA aplicada e repetição intensiva para fluência oral real.</p>
+            <p class="subtitle">Áudio guiado, voz neural, IA aplicada e exploração de vídeos reais para fluência oral consistente.</p>
         </div>
         <nav class="tabs">
             <button class="tab active" data-tab="practice">Practice Lab</button>
@@ -34,10 +47,10 @@
                 <div class="practice-hero-grid">
                     <div class="practice-hero-copy">
                         <p class="hero-eyebrow"><span>01</span> TECH-INTENSIVE ORAL FLUENCY</p>
-                        <h2 class="practice-hero-title">TREINE FLUÊNCIA COM SOM, TEXTO, KARAOKE E IA NO MESMO LOOP</h2>
+                        <h2 class="practice-hero-title">TREINE FLUÊNCIA COM SOM, TEXTO, REPETIÇÃO E VÍDEOS REAIS NO MESMO LOOP</h2>
                         <p class="practice-hero-text">
                             Uma experiência de shadowing pensada para transformar repetição em progresso visível:
-                            áudio sincronizado, gravação, comparação, missão guiada e laboratório de transcrição do YouTube.
+                            áudio sincronizado, gravação, comparação, missão guiada e exploração de vídeos do YouTube por assunto.
                         </p>
                         <div class="practice-hero-stats">
                             <div class="hero-stat">
@@ -45,8 +58,8 @@
                                 <span class="hero-stat-label">voz neural e fallback local</span>
                             </div>
                             <div class="hero-stat">
-                                <span class="hero-stat-value">KARAOKE + YT LAB</span>
-                                <span class="hero-stat-label">texto correndo junto da fala</span>
+                                <span class="hero-stat-value">VIDEO EXPLORER</span>
+                                <span class="hero-stat-label">temas e vídeos reais para ampliar repertório</span>
                             </div>
                             <div class="hero-stat">
                                 <span class="hero-stat-value">MISSION CONTROL</span>
@@ -55,7 +68,7 @@
                         </div>
                         <div class="practice-hero-actions">
                             <a class="btn btn-primary" href="#practice-composer">COMEÇAR SESSÃO</a>
-                            <a class="btn btn-ghost" href="#yt-lab-anchor">ABRIR YOUTUBE KARAOKE</a>
+                            <a class="btn btn-ghost" href="#yt-lab-anchor">ABRIR EXPLORADOR DE VÍDEOS</a>
                         </div>
                     </div>
                     <div class="practice-hero-panel">
@@ -64,7 +77,7 @@
                             <li>Texto sincronizado em tempo real com o áudio principal</li>
                             <li>Fases de estudo guiadas do aquecimento até a gravação</li>
                             <li>Estudo frase por frase com tradução, pronúncia e vocabulário</li>
-                            <li>Vídeos relacionados para ampliar repertório com conteúdo real</li>
+                            <li>Busca de vídeos por assunto para ampliar repertório com conteúdo real</li>
                         </ul>
                         <div class="hero-panel-foot">
                             Projetado para manter o backend intacto e elevar a experiência visual.
@@ -185,10 +198,38 @@
                     </div>
                 </div>
 
-                <div class="card karaoke-card stage-card">
-                    <h2>📖 Texto Sincronizado</h2>
-                    <p class="hint">▶ Dê play no áudio — o texto acompanha a fala em tempo real</p>
-                    <div id="karaoke-text" class="karaoke-text"></div>
+                <div class="card karaoke-card karaoke-card-wide stage-card">
+                    <div class="card-header-row">
+                        <h2>📖 Texto Sincronizado</h2>
+                        <div class="karaoke-translation-toolbar">
+                            <select id="karaoke-translate-to" title="Idioma da tradução">
+                                <option value="pt" selected>🇧🇷 Tradução em Português</option>
+                                <option value="en">🇺🇸 Translation in English</option>
+                                <option value="es">🇪🇸 Traducción en Español</option>
+                                <option value="fr">🇫🇷 Traduction en Français</option>
+                                <option value="de">🇩🇪 Übersetzung auf Deutsch</option>
+                                <option value="it">🇮🇹 Traduzione in Italiano</option>
+                            </select>
+                            <span id="karaoke-translation-badge" class="badge badge-sm">—</span>
+                        </div>
+                    </div>
+                    <p id="karaoke-translation-hint" class="hint">▶ Dê play no áudio — o texto acompanha a fala em tempo real e a tradução segue a frase ativa.</p>
+                    <div class="karaoke-dual-panel">
+                        <div class="karaoke-pane">
+                            <div class="karaoke-pane-header">
+                                <span>Original</span>
+                                <span class="karaoke-pane-tag" id="karaoke-source-lang">EN</span>
+                            </div>
+                            <div id="karaoke-text" class="karaoke-text"></div>
+                        </div>
+                        <div class="karaoke-pane karaoke-translation-pane">
+                            <div class="karaoke-pane-header">
+                                <span>Tradução Guiada</span>
+                                <span class="karaoke-pane-tag" id="karaoke-target-lang">PT</span>
+                            </div>
+                            <div id="karaoke-translation-text" class="karaoke-text karaoke-translation-text"></div>
+                        </div>
+                    </div>
                     <div class="karaoke-progress">
                         <div class="karaoke-progress-fill" id="karaoke-progress-fill"></div>
                     </div>
@@ -206,99 +247,32 @@
                     <div id="recordings-list" class="recordings-list"></div>
                 </div>
 
-                <div class="card stage-card">
-                    <h2>🎬 Vídeos Virais Relacionados</h2>
-                    <p class="hint">Use estes vídeos para shadowing avançado com conteúdo real</p>
-                    <div id="videos-grid" class="videos-grid"></div>
-                </div>
             </div>
 
-            <div id="yt-lab-anchor" class="card yt-karaoke-card">
+            <div id="yt-lab-anchor" class="card video-discovery-card">
                 <div class="card-header-row">
-                    <h2>🎤 YouTube Karaoke Lab</h2>
-                    <span id="yt-karaoke-track-meta" class="badge badge-sm hidden"></span>
+                    <h2>🎬 Explorador de Vídeos por Assunto</h2>
+                    <span id="videos-source-badge" class="badge badge-sm hidden"></span>
                 </div>
-                <p class="hint">Video no topo, legenda embaixo com efeito karaoke para música, filmes e entrevistas. Dica: Shift/Ctrl + clique na linha para calibrar a sincronia.</p>
-                <div class="yt-k-controls">
+                <p class="hint">Pesquise por tema e explore vídeos reais para praticar. Nesta área a aplicação só lista vídeos relacionados, sem tentar extrair transcrição automaticamente.</p>
+                <div class="video-explorer-toolbar">
                     <input
                         type="text"
-                        id="yt-url-input"
-                        placeholder="Cole link ou ID: https://www.youtube.com/watch?v=..."
+                        id="video-topic-input"
+                        placeholder="Ex.: entrevistas curtas sobre tecnologia em inglês"
                     >
-                    <select id="yt-lang-select" title="Idioma preferido da legenda">
-                        <option value="en" selected>🇺🇸 Legenda em inglês</option>
-                        <option value="pt">🇧🇷 Legenda em português</option>
-                        <option value="es">🇪🇸 Legenda em espanhol</option>
-                        <option value="fr">🇫🇷 Legenda em francês</option>
-                        <option value="de">🇩🇪 Legenda em alemão</option>
-                        <option value="it">🇮🇹 Legenda em italiano</option>
+                    <select id="video-topic-lang" title="Idioma principal da busca">
+                        <option value="en" selected>🇺🇸 Buscar em inglês</option>
+                        <option value="pt">🇧🇷 Buscar em português</option>
+                        <option value="es">🇪🇸 Buscar em espanhol</option>
+                        <option value="fr">🇫🇷 Buscar em francês</option>
+                        <option value="de">🇩🇪 Buscar em alemão</option>
+                        <option value="it">🇮🇹 Buscar em italiano</option>
                     </select>
-                    <select id="yt-sync-mode" title="Estratégia de sincronização">
-                        <option value="accuracy" selected>🎯 Sync preciso</option>
-                        <option value="balanced">⚖️ Balanceado</option>
-                        <option value="fast">⚡ Carregamento rápido</option>
-                    </select>
-                    <button id="btn-load-yt-karaoke" class="btn btn-lmnt">🎬 Carregar Karaoke</button>
+                    <button id="btn-video-topic-search" class="btn btn-lmnt">🔎 Buscar vídeos</button>
                 </div>
-
-                <div id="yt-karaoke-loading" class="loading hidden">
-                    <div class="spinner"></div>
-                    <p>Extraindo transcrição do YouTube...</p>
-                </div>
-
-                <p id="yt-karaoke-empty" class="hint">Selecione um vídeo sugerido ou cole um link para começar.</p>
-
-                <div id="yt-karaoke-panel" class="hidden">
-                    <div class="yt-karaoke-layout">
-                        <div class="yt-karaoke-video-col">
-                            <div class="yt-k-toolbar">
-                                <p id="yt-karaoke-info" class="hint"></p>
-                                <div class="yt-k-toolbar-actions">
-                                    <div class="yt-k-toolbar-group">
-                                        <button id="btn-yt-autoscroll" class="btn btn-sm btn-ghost">🧭 Auto-scroll: ON</button>
-                                        <button id="btn-yt-delay-minus" class="btn btn-sm btn-ghost" title="Atrasar legenda em 0.25s">◀ 0.25s</button>
-                                        <span id="yt-delay-value" class="yt-delay-value">Ajuste +0.00s</span>
-                                        <button id="btn-yt-delay-plus" class="btn btn-sm btn-ghost" title="Adiantar legenda em 0.25s">0.25s ▶</button>
-                                        <button id="btn-yt-sync-now" class="btn btn-sm btn-ghost">🎯 Marcar início agora</button>
-                                        <button id="btn-yt-delay-reset" class="btn btn-sm btn-ghost">Reset</button>
-                                    </div>
-                                    <div class="yt-k-toolbar-group yt-k-toolbar-group-study">
-                                        <select id="yt-study-target" class="yt-study-target" title="Idioma de tradução do estudo">
-                                            <option value="pt" selected>🇧🇷 Traduzir para PT</option>
-                                            <option value="en">🇺🇸 Translate to EN</option>
-                                            <option value="es">🇪🇸 Traducir al ES</option>
-                                            <option value="fr">🇫🇷 Traduire en FR</option>
-                                            <option value="de">🇩🇪 Auf DE ubersetzen</option>
-                                            <option value="it">🇮🇹 Tradurre in IT</option>
-                                        </select>
-                                        <button id="btn-yt-study" class="btn btn-sm btn-accent">📚 Estudar transcrição</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="yt-player-wrap">
-                                <div id="yt-karaoke-player"></div>
-                            </div>
-                            <div class="karaoke-progress">
-                                <div id="yt-karaoke-progress-fill" class="karaoke-progress-fill"></div>
-                            </div>
-                        </div>
-                        <div class="yt-karaoke-subtitles-col">
-                            <div id="yt-karaoke-subtitles" class="yt-karaoke-subtitles"></div>
-                        </div>
-                    </div>
-                    <div id="yt-study-loading" class="loading hidden">
-                        <div class="spinner"></div>
-                        <p>Analisando frases e vocabulário com IA...</p>
-                    </div>
-                    <div id="yt-study-panel" class="yt-study-panel hidden">
-                        <div class="card-header-row">
-                            <h3>🧠 Estudo Frase por Frase</h3>
-                            <span id="yt-study-meta" class="badge badge-sm"></span>
-                        </div>
-                        <p id="yt-study-intro" class="yt-study-intro hidden"></p>
-                        <div id="yt-study-list" class="yt-study-list"></div>
-                    </div>
-                </div>
+                <p id="videos-summary" class="hint">Gere uma sessão para receber sugestões automáticas ou pesquise um assunto diretamente.</p>
+                <div id="videos-grid" class="videos-grid"></div>
             </div>
 
             <div id="video-player-modal" class="modal hidden">
@@ -450,12 +424,6 @@
         <!-- ═══ TAB: IA TOOLS ═══════════════════════════════ -->
         <section id="tab-ai-tools" class="tab-content">
             <div class="card card-ai">
-                <h2>🧩 Status das APIs</h2>
-                <p class="hint">Confira rapidamente quais integrações estão ativas no momento</p>
-                <div class="api-badges" id="api-badges"></div>
-            </div>
-
-            <div class="card card-ai">
                 <h2>🤖 Gerador de Texto</h2>
                 <p class="hint">A IA gera textos para shadowing com idioma, tamanho e tipo que você escolher</p>
 
@@ -545,103 +513,234 @@
         <section id="tab-conversation" class="tab-content">
             <div class="card conv-card">
                 <div class="conv-header">
-                    <h2>💬 Prática de Conversação</h2>
-                    <p class="hint">Fale com um parceiro nativo por IA — clique no microfone e converse em voz.</p>
+                    <div>
+                        <h2>💬 Prática de Conversação</h2>
+                        <p class="hint">Converse por voz ou texto com um parceiro nativo por IA, usando cenário, objetivo e apoio guiado.</p>
+                    </div>
+                    <div class="conv-session-meta" id="conv-session-meta">
+                        <span class="badge badge-sm" id="conv-active-scenario">Cenário: Casual</span>
+                        <span class="badge badge-sm" id="conv-active-goal">Objetivo: Fluidez</span>
+                        <span class="badge badge-sm" id="conv-engine-badge">Sem respostas ainda</span>
+                    </div>
                 </div>
 
-                <div class="conv-settings">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="conv-lang">Idioma</label>
-                            <select id="conv-lang">
-                                <option value="en" selected>🇺🇸 English</option>
-                                <option value="pt">🇧🇷 Português</option>
-                                <option value="es">🇪🇸 Español</option>
-                                <option value="fr">🇫🇷 Français</option>
-                                <option value="de">🇩🇪 Deutsch</option>
-                                <option value="it">🇮🇹 Italiano</option>
-                            </select>
+                <div class="conv-hero">
+                    <div class="conv-hero-copy">
+                        <p class="conv-kicker">CONVERSATION STUDIO</p>
+                        <h3>Fale com contexto, acompanhe o ritmo da sessão e destrave quando faltar assunto.</h3>
+                        <p class="conv-hero-text" id="conv-summary-text">
+                            Escolha um cenário, defina o objetivo e comece por voz ou texto. A colinha e os starters ajudam a manter a conversa viva sem quebrar o foco do idioma.
+                        </p>
+                    </div>
+                    <div class="conv-session-stats">
+                        <div class="conv-mini-stat">
+                            <span class="conv-mini-label">Turnos</span>
+                            <strong id="conv-turn-count">0</strong>
                         </div>
-                        <div class="form-group">
-                            <label for="conv-voice">Voz IA</label>
-                            <select id="conv-voice">
-                                <option value="leah" selected>Leah (EN)</option>
-                                <option value="lily">Lily (EN)</option>
-                                <option value="michael">Michael (EN)</option>
-                                <option value="amy">Amy (EN)</option>
-                                <option value="ryan">Ryan (EN)</option>
-                            </select>
+                        <div class="conv-mini-stat">
+                            <span class="conv-mini-label">Modo</span>
+                            <strong id="conv-input-mode">Pronto</strong>
                         </div>
-                        <div class="form-group">
-                            <label for="conv-tts-engine">Engine de voz</label>
-                            <select id="conv-tts-engine">
-                                <option value="lmnt" selected>🎙️ LMNT (Natural)</option>
-                                <option value="deepgram">🧠 Deepgram (Aura-2)</option>
-                                <option value="local">🖥️ Piper (Local)</option>
-                            </select>
+                        <div class="conv-mini-stat">
+                            <span class="conv-mini-label">Idioma</span>
+                            <strong id="conv-lang-badge">🇺🇸 English</strong>
                         </div>
-                        <div class="form-group">
-                            <label for="conv-translate-to">Traduzir para</label>
-                            <select id="conv-translate-to">
-                                <option value="pt" selected>🇧🇷 Português</option>
-                                <option value="en">🇺🇸 English</option>
-                                <option value="es">🇪🇸 Español</option>
-                                <option value="fr">🇫🇷 Français</option>
-                                <option value="de">🇩🇪 Deutsch</option>
-                                <option value="it">🇮🇹 Italiano</option>
-                            </select>
+                    </div>
+                </div>
+
+                <div class="conv-primary-strip">
+                    <div class="form-group">
+                        <label for="conv-lang">Idioma</label>
+                        <select id="conv-lang">
+                            <option value="en" selected>🇺🇸 English</option>
+                            <option value="pt">🇧🇷 Português</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="conv-scenario">Cenário</label>
+                        <select id="conv-scenario">
+                            <option value="casual" selected>☕ Small talk casual</option>
+                            <option value="travel">✈️ Viagem</option>
+                            <option value="work">💼 Trabalho</option>
+                            <option value="interview">🎯 Entrevista</option>
+                            <option value="tech">🧠 Tecnologia</option>
+                            <option value="daily">🏠 Rotina diária</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="conv-goal">Objetivo</label>
+                        <select id="conv-goal">
+                            <option value="flow" selected>🌊 Fluidez</option>
+                            <option value="confidence">🧩 Confiança</option>
+                            <option value="vocabulary">📚 Vocabulário</option>
+                            <option value="opinions">💬 Opiniões</option>
+                        </select>
+                    </div>
+                    <div class="conv-primary-status">
+                        <span class="conv-primary-status-label" id="conv-primary-status-label">Parceiro</span>
+                        <strong id="conv-primary-status-value">Leah · LMNT</strong>
+                        <span class="conv-primary-status-note" id="conv-primary-status-note">Voz, engine e tradução ficam nas opções avançadas.</span>
+                    </div>
+                </div>
+
+                <div class="conv-starters-card">
+                    <div class="card-header-row">
+                        <h3>⚡ Começos Rápidos</h3>
+                        <span class="badge badge-sm">Starter prompts</span>
+                    </div>
+                    <p class="hint">Use um starter para abrir a conversa mais rápido ou jogar uma nova direção no meio da sessão.</p>
+                    <div class="conv-chip-grid" id="conv-starters"></div>
+                </div>
+
+                <div class="conv-stage-grid">
+                    <section class="conv-dialogue-card">
+                        <div class="card-header-row conv-dialogue-header">
+                            <div>
+                                <h3 id="conv-dialogue-title">🗨️ Fluxo da Conversa</h3>
+                                <p id="conv-dialogue-hint" class="hint">Use voz para ganhar ritmo e texto quando quiser mais precisão.</p>
+                            </div>
+                            <span class="badge badge-sm" id="conv-feed-badge">0 turno(s)</span>
                         </div>
-                        <div class="form-group">
-                            <label>&nbsp;</label>
-                            <label class="conv-toggle-label">
-                                <input type="checkbox" id="conv-suggest-toggle">
-                                <span class="conv-toggle-pill"></span>
-                                <span>💡 Colinha</span>
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>&nbsp;</label>
-                            <label class="conv-toggle-label">
-                                <input type="checkbox" id="conv-auto-send-toggle">
-                                <span class="conv-toggle-pill"></span>
-                                <span>⏱️ Envio automático (5s silêncio)</span>
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>&nbsp;</label>
-                            <div class="btn-group-vert">
-                                <button class="btn btn-sm btn-ghost" id="conv-clear-btn">🗑️ Limpar</button>
-                                <button class="btn btn-sm btn-primary" id="conv-lesson-btn">🎯 Aula Inteligente + Correção</button>
+
+                        <div class="conv-chat" id="conv-chat">
+                            <div class="conv-empty" id="conv-empty">
+                                <span class="conv-empty-icon">🎙️</span>
+                                <p>Escolha um starter ou clique no microfone para começar a conversa.</p>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="conv-body" id="conv-body">
-                    <div class="conv-chat" id="conv-chat">
-                        <div class="conv-empty" id="conv-empty">
-                            <span class="conv-empty-icon">🎙️</span>
-                            <p>Clique no microfone e comece a falar!</p>
+                        <div class="conv-compose">
+                            <div class="form-group conv-compose-main">
+                                <label for="conv-text-input">Mensagem de apoio</label>
+                                <textarea
+                                    id="conv-text-input"
+                                    rows="3"
+                                    placeholder="Digite em inglês, francês, espanhol... ou use um starter acima."
+                                ></textarea>
+                            </div>
+                            <div class="conv-compose-actions">
+                                <button class="btn btn-primary" id="conv-send-btn">📨 Enviar texto</button>
+                                <p class="hint">Pressione Enter para enviar. Use Shift+Enter para quebrar linha.</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <aside class="conv-colinha hidden" id="conv-colinha">
-                        <div class="conv-colinha-header">
-                            <span>💡 Colinha</span>
-                            <span class="conv-colinha-hint">Sugestões do que falar</span>
+                        <div class="conv-controls">
+                            <button class="conv-mic-btn" id="conv-mic-btn" title="Clique para falar">
+                                <span class="conv-mic-icon">🎙️</span>
+                            </button>
+                            <div class="conv-status-stack">
+                                <span class="conv-status" id="conv-status">Clique para falar</span>
+                                <span class="conv-engine-status" id="conv-engine-status">Sem respostas ainda.</span>
+                            </div>
                         </div>
-                        <div class="conv-colinha-empty" id="conv-colinha-empty">
-                            <p>As sugestões aparecerão aqui após a IA responder.</p>
-                        </div>
-                        <div class="conv-chips" id="conv-chips"></div>
+                    </section>
+
+                    <aside class="conv-guide-rail">
+                        <section class="conv-guide-card">
+                            <div class="card-header-row">
+                                <h3 id="conv-compass-title">🧭 Bússola da Sessão</h3>
+                                <span class="badge badge-sm" id="conv-pace-badge">Pronto</span>
+                            </div>
+                            <p class="conv-guide-copy" id="conv-next-step">Escolha um starter ou toque no microfone para abrir a conversa com naturalidade.</p>
+                            <div class="conv-guide-stats">
+                                <div class="conv-guide-pill">
+                                    <span id="conv-guide-goal-label">Objetivo</span>
+                                    <strong id="conv-guide-goal-value">Fluidez</strong>
+                                </div>
+                                <div class="conv-guide-pill">
+                                    <span id="conv-guide-scene-label">Cenário</span>
+                                    <strong id="conv-guide-scene-value">Casual</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="conv-guide-card">
+                            <div class="card-header-row">
+                                <h3 id="conv-actions-title">⚡ Próximos Movimentos</h3>
+                                <span class="badge badge-sm" id="conv-actions-badge">Ações rápidas</span>
+                            </div>
+                            <p class="hint" id="conv-actions-hint">Toque em uma opção para jogar uma resposta natural no composer.</p>
+                            <div class="conv-power-grid" id="conv-power-actions"></div>
+                        </section>
+
+                        <section class="conv-guide-card hidden" id="conv-colinha-card">
+                            <div class="conv-colinha-header">
+                                <span>💡 Colinha</span>
+                                <span class="conv-colinha-hint">Sugestões do que falar</span>
+                            </div>
+                            <div class="conv-colinha-empty" id="conv-colinha-empty">
+                                <p>As sugestões aparecerão aqui após a IA responder.</p>
+                            </div>
+                            <div class="conv-chips" id="conv-chips"></div>
+                        </section>
+
+                        <details class="conv-guide-card conv-advanced-card" id="conv-advanced-card">
+                            <summary>
+                                <span id="conv-advanced-title">⚙️ Configuração Avançada</span>
+                                <span id="conv-advanced-hint">voz, tradução, envio automático e ferramentas</span>
+                            </summary>
+                            <div class="conv-settings conv-settings-advanced">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="conv-voice">Voz IA</label>
+                                        <select id="conv-voice">
+                                            <option value="leah" selected>Leah (EN)</option>
+                                            <option value="lily">Lily (EN)</option>
+                                            <option value="michael">Michael (EN)</option>
+                                            <option value="amy">Amy (EN)</option>
+                                            <option value="ryan">Ryan (EN)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="conv-tts-engine">Engine de voz</label>
+                                        <select id="conv-tts-engine">
+                                            <option value="lmnt" selected>🎙️ LMNT (Natural)</option>
+                                            <option value="deepgram">🧠 Deepgram (Aura-2)</option>
+                                            <option value="local">🖥️ Piper (Local)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="conv-translate-to">Traduzir para</label>
+                                        <select id="conv-translate-to">
+                                            <option value="pt" selected>🇧🇷 Português</option>
+                                            <option value="en">🇺🇸 English</option>
+                                            <option value="es">🇪🇸 Español</option>
+                                            <option value="fr">🇫🇷 Français</option>
+                                            <option value="de">🇩🇪 Deutsch</option>
+                                            <option value="it">🇮🇹 Italiano</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <label class="conv-toggle-label">
+                                            <input type="checkbox" id="conv-suggest-toggle">
+                                            <span class="conv-toggle-pill"></span>
+                                            <span>💡 Colinha</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <label class="conv-toggle-label">
+                                            <input type="checkbox" id="conv-auto-send-toggle">
+                                            <span class="conv-toggle-pill"></span>
+                                            <span>⏱️ Envio automático (5s silêncio)</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div class="btn-group-vert">
+                                            <button class="btn btn-sm btn-ghost" id="conv-clear-btn">🗑️ Limpar</button>
+                                            <button class="btn btn-sm btn-primary" id="conv-lesson-btn">🎯 Aula Inteligente + Correção</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
                     </aside>
-                </div>
-
-                <div class="conv-controls">
-                    <button class="conv-mic-btn" id="conv-mic-btn" title="Clique para falar">
-                        <span class="conv-mic-icon">🎙️</span>
-                    </button>
-                    <span class="conv-status" id="conv-status">Clique para falar</span>
                 </div>
             </div>
         </section>
@@ -717,7 +816,8 @@
                         <h3>🃏 Flashcards do Banco</h3>
                         <span id="adaptive-flashcard-meta" class="badge badge-sm">0 cartas</span>
                     </div>
-                    <p id="adaptive-flashcard-hint" class="hint">As cartas usam palavras rastreadas no banco e atualizam a fila de revisão.</p>
+                    <p id="adaptive-flashcard-hint" class="hint">As cartas agora separam os idiomas estudados e mostram mais contexto para cada item salvo no banco.</p>
+                    <div id="adaptive-lang-filters" class="adaptive-lang-filters"></div>
                     <div id="adaptive-flashcard-shell" class="adaptive-flashcard-shell">
                         <div class="adaptive-flashcard-stage">
                             <button id="btn-adaptive-flashcard-prev" class="btn btn-sm btn-ghost adaptive-flashcard-nav" type="button" aria-label="Carta anterior">◀</button>
@@ -758,6 +858,17 @@
                 </div>
             </div>
         </section>
+
+        <section class="api-status-footer-wrap">
+            <div class="card api-status-footer">
+                <div class="card-header-row">
+                    <h2>🧩 Status das APIs</h2>
+                    <span class="badge badge-sm">Diagnóstico</span>
+                </div>
+                <p class="hint">Painel técnico no rodapé para consulta rápida das integrações ativas.</p>
+                <div class="api-badges" id="api-badges"></div>
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -791,6 +902,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=20260329c"></script>
+    <script src="/static/js/app.js?v=20260424a"></script>
 </body>
 </html>

@@ -1,0 +1,20 @@
+metricbeat.modules:
+  - module: elasticsearch
+    xpack.enabled: true
+    period: 10s
+    hosts: ["http://elasticsearch:9200"]
+    scope: cluster
+
+  - module: kibana
+    metricsets: ["stats"]
+    xpack.enabled: true
+    period: 10s
+    hosts: ["http://kibana:5601"]
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+logging.metrics.enabled: false

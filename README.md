@@ -136,6 +136,11 @@ Todos os idiomas principais do projeto:
 
 - tentativas combinadas por modo (`accuracy`, `balanced`, `fast`)
 - fontes possiveis: API de legenda, `yt-dlp`, `Deepgram`, `faster-whisper`, OpenRouter audio, OpenAI audio
+- em Docker/servidor, bloqueio `429` ou `Sign in to confirm you're not a bot` e comum
+- para esse cenario, configure `YTDLP_COOKIES_FILE=config/youtube-cookies.txt`
+- fora do container, `YTDLP_COOKIES_FROM_BROWSER=edge` ou `chrome:Default` costuma funcionar melhor
+- proxy opcional: `YTDLP_PROXY_URL` e `YOUTUBE_TRANSCRIPT_PROXY_URL`
+- delays opcionais para reduzir rate limit: `YTDLP_SLEEP_REQUESTS_SEC`, `YTDLP_SLEEP_INTERVAL_SEC`, `YTDLP_MAX_SLEEP_INTERVAL_SEC`
 
 ## Início Rapido
 
@@ -172,6 +177,27 @@ Logs:
 docker compose logs -f
 ```
 
+### 2.1) Stack Elastic opcional
+
+Para subir Elasticsearch + Kibana no mesmo ambiente Docker do projeto:
+
+```bash
+docker compose --profile elastic up -d elasticsearch kibana metricbeat
+```
+
+Endpoints locais:
+
+- Elasticsearch: `http://127.0.0.1:9200`
+- Kibana: `http://127.0.0.1:5601`
+
+O `metricbeat` ativa o Stack Monitoring do Elastic para que a tela de monitoramento do Kibana mostre CPU, heap, shards e demais métricas do cluster.
+
+Se quiser subir tudo de uma vez com o perfil Elastic habilitado:
+
+```bash
+docker compose --profile elastic up -d --build
+```
+
 ### 3) Check rapido de saude
 
 ```bash
@@ -192,6 +218,12 @@ curl -sS http://127.0.0.1:5000/api/status
 - `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`)
 - `OLLAMA_MODEL` (opcional)
 - `PIPER_ENABLED` (default `1`)
+- `ELASTIC_STACK_VERSION` (default `7.15.1`)
+- `ELASTICSEARCH_PORT` (default `9200`)
+- `KIBANA_PORT` (default `5601`)
+- `ELASTICSEARCH_JAVA_OPTS` (default `-Xms1g -Xmx1g`)
+- `KIBANA_NODE_OPTIONS` (default `--max-old-space-size=512`)
+- `ELASTICSEARCH_DATA_VOLUME` (opcional, para reutilizar um volume Docker existente)
 
 ## Integracao com o sistema principal
 

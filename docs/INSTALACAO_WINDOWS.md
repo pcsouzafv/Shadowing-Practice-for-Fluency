@@ -67,6 +67,30 @@ Observacoes:
 - `WHATSAPP_ENABLED=0` mantem o modulo WhatsApp desligado na aplicacao.
 - Se nao for usar Ollama local, pode deixar `OLLAMA_ENABLED=0`.
 
+### 4.1. Se o YouTube bloquear no Docker
+
+Esse projeto costuma sofrer mais bloqueio do YouTube quando roda em container. Para o modulo de karaoke/transcricao funcionar com mais estabilidade, prefira configurar um arquivo de cookies:
+
+1. Exporte um `cookies.txt` do navegador em formato Netscape.
+2. Salve o arquivo em `config\youtube-cookies.txt` dentro do projeto.
+3. Adicione no `.env`:
+
+```env
+YTDLP_COOKIES_FILE=config/youtube-cookies.txt
+YTDLP_SLEEP_REQUESTS_SEC=0.75
+YTDLP_SLEEP_INTERVAL_SEC=5
+YTDLP_MAX_SLEEP_INTERVAL_SEC=8
+```
+
+Se mesmo assim o IP continuar bloqueado, voce pode testar tambem:
+
+```env
+YTDLP_PROXY_URL=http://usuario:senha@host:porta
+YOUTUBE_TRANSCRIPT_PROXY_URL=http://usuario:senha@host:porta
+```
+
+No Docker, prefira `YTDLP_COOKIES_FILE`. `YTDLP_COOKIES_FROM_BROWSER` costuma ser menos confiavel porque o navegador roda fora do container.
+
 ### 5. Subir os containers
 
 Ainda no PowerShell:
@@ -160,6 +184,15 @@ Configuracao minima recomendada:
 DATABASE_URL=disabled
 WHATSAPP_ENABLED=0
 ```
+
+Se voce quiser usar bastante o modulo do YouTube fora do Docker, vale adicionar tambem:
+
+```env
+YTDLP_COOKIES_FROM_BROWSER=edge
+YTDLP_SLEEP_REQUESTS_SEC=0.75
+```
+
+Se voce usa Chrome, pode trocar por `YTDLP_COOKIES_FROM_BROWSER=chrome` ou `chrome:Default`.
 
 ### 3. Executar com o atalho do projeto
 

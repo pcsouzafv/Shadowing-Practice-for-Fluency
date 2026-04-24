@@ -73,6 +73,30 @@ AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def _env_float(name: str, default: float = 0.0, minimum: float | None = None) -> float:
+    raw = str(os.getenv(name, "") or "").strip()
+    if not raw:
+        value = default
+    else:
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            value = default
+    if minimum is not None:
+        value = max(minimum, value)
+    return value
+
+
+def _resolve_env_path(name: str) -> str:
+    raw = str(os.getenv(name, "") or "").strip()
+    if not raw:
+        return ""
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        path = BASE_DIR / path
+    return str(path.resolve())
+
 PROGRESS_FILE = DATA_DIR / "progress.json"
 HISTORY_FILE = DATA_DIR / "session_history.json"
 if not PROGRESS_FILE.exists():
@@ -121,6 +145,33 @@ LOCAL_WHISPER_ENABLED = (
 LOCAL_WHISPER_MODEL = os.getenv("LOCAL_WHISPER_MODEL", "tiny")
 LOCAL_WHISPER_DEVICE = os.getenv("LOCAL_WHISPER_DEVICE", "cpu")
 LOCAL_WHISPER_COMPUTE_TYPE = os.getenv("LOCAL_WHISPER_COMPUTE_TYPE", "int8")
+YTDLP_COOKIES_FILE = _resolve_env_path("YTDLP_COOKIES_FILE")
+YTDLP_COOKIES_FROM_BROWSER = os.getenv("YTDLP_COOKIES_FROM_BROWSER", "").strip()
+YTDLP_PROXY_URL = os.getenv("YTDLP_PROXY_URL", "").strip()
+YOUTUBE_TRANSCRIPT_PROXY_URL = os.getenv(
+    "YOUTUBE_TRANSCRIPT_PROXY_URL",
+    YTDLP_PROXY_URL,
+).strip()
+YTDLP_SLEEP_REQUESTS_SEC = _env_float(
+    "YTDLP_SLEEP_REQUESTS_SEC",
+    0.0,
+    minimum=0.0,
+)
+YTDLP_SLEEP_INTERVAL_SEC = _env_float(
+    "YTDLP_SLEEP_INTERVAL_SEC",
+    0.0,
+    minimum=0.0,
+)
+YTDLP_MAX_SLEEP_INTERVAL_SEC = _env_float(
+    "YTDLP_MAX_SLEEP_INTERVAL_SEC",
+    0.0,
+    minimum=0.0,
+)
+YTDLP_SOCKET_TIMEOUT_SEC = _env_float(
+    "YTDLP_SOCKET_TIMEOUT_SEC",
+    20.0,
+    minimum=5.0,
+)
 
 # Piper TTS (offline/local)
 PIPER_ENABLED = (
@@ -563,8 +614,56 @@ def _normalize_practice_type(value, default: str = "dialogue") -> str:
     return normalized if normalized in PRACTICE_TYPE_LABELS else default
 
 
+def _normalize_shadowing_text(text: str) -> str:
+    working = html.unescape(str(text or ""))[:MAX_TEXT_CHARS]
+    if not working:
+        return ""
+
+    working = working.replace("\r\n", "\n").replace("\r", "\n")
+    label_pattern = r"(?:[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,24}|Speaker\s*\d+)"
+    speaker_labels = re.findall(
+        rf"(?m)^\s*({label_pattern})\s*:\s*",
+        working,
+    )
+    normalized_labels = [
+        _clean_caption_text(label).casefold()
+        for label in speaker_labels
+        if _clean_caption_text(label)
+    ]
+    should_strip_labels = (
+        len(normalized_labels) >= 2
+        or any(
+            re.fullmatch(r"[a-zà-ÿ]", label)
+            or label.replace(" ", "") in {"speaker1", "speaker2", "speaker3"}
+            for label in normalized_labels
+        )
+    )
+
+    if should_strip_labels:
+        working = re.sub(
+            rf"(?m)^\s*{label_pattern}\s*:\s*",
+            "",
+            working,
+        )
+        working = re.sub(
+            rf"([.!?。！？]\s+){label_pattern}\s*:\s*",
+            r"\1",
+            working,
+        )
+
+    lines = []
+    for raw_line in working.splitlines():
+        cleaned_line = _clean_caption_text(raw_line)
+        if cleaned_line:
+            lines.append(cleaned_line)
+
+    if lines:
+        return " ".join(lines).strip()
+    return _clean_caption_text(working)
+
+
 def _split_sentences_for_practice(text: str) -> list[str]:
-    cleaned = _clean_caption_text(text or "")
+    cleaned = _normalize_shadowing_text(text or "")
     if not cleaned:
         return []
 
@@ -1090,6 +1189,181 @@ def _default_youtube_query(lang: str) -> str:
     return defaults.get(lang, "language speaking practice")
 
 
+def _compose_search_query(*parts: str, max_chars: int = MAX_QUERY_CHARS) -> str:
+    combined = " ".join(
+        str(part or "").strip()
+        for part in parts
+        if str(part or "").strip()
+    )
+    return _normalize_search_query(combined, max_chars=max_chars)
+
+
+def _youtube_language_search_hints(lang: str) -> list[str]:
+    hints = {
+        "en": ["in english", "english"],
+        "pt": ["em portugues", "portugues"],
+        "es": ["en espanol", "espanol"],
+        "fr": ["en francais", "francais"],
+        "de": ["auf deutsch", "deutsch"],
+        "it": ["in italiano", "italiano"],
+    }
+    return hints.get(lang, [])
+
+
+def _estimate_search_query_language(query: str) -> str:
+    text = _normalize_search_query(query, max_chars=120).casefold()
+    if not text:
+        return ""
+
+    accent_scores = {
+        "de": len(re.findall(r"[äöüß]", text)),
+        "es": len(re.findall(r"[ñáéíóú¿¡]", text)),
+        "fr": len(re.findall(r"[àâçéèêëîïôùûüÿœæ]", text)),
+        "it": len(re.findall(r"[àèéìíîòóù]", text)),
+        "pt": len(re.findall(r"[ãõáàâéêíóôúç]", text)),
+    }
+    marker_words = {
+        "en": {"the", "and", "movie", "film", "have", "seen", "last", "night", "how", "was", "english"},
+        "pt": {"que", "como", "filme", "ontem", "portugues", "voce", "rotina", "conversa", "obrigado"},
+        "es": {"que", "como", "pelicula", "ayer", "espanol", "rutina", "dialogo", "gracias", "hola"},
+        "fr": {"que", "film", "hier", "francais", "bonjour", "merci", "dialogue", "comment", "avec"},
+        "de": {"der", "die", "das", "und", "ist", "nicht", "ich", "du", "wie", "wo", "schon", "gestern", "film", "gesehen", "deutsch"},
+        "it": {"che", "come", "film", "ieri", "italiano", "ciao", "grazie", "dialogo", "routine"},
+    }
+
+    tokens = set(re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ']+", text))
+    scores = {}
+    for lang, words in marker_words.items():
+        scores[lang] = len(tokens & words) * 2 + accent_scores.get(lang, 0)
+
+    best_lang = max(scores, key=scores.get)
+    best_score = scores[best_lang]
+    second_score = max(
+        score for lang, score in scores.items()
+        if lang != best_lang
+    ) if len(scores) > 1 else 0
+
+    if best_score >= 2 and best_score >= second_score + 1:
+        return best_lang
+    return ""
+
+
+def _compact_youtube_search_topic(query: str, max_words: int = 8) -> str:
+    cleaned = _normalize_search_query(query, max_chars=120)
+    if not cleaned:
+        return ""
+
+    first_sentence = re.split(r'(?<=[.!?。！？])\s+', cleaned, maxsplit=1)[0].strip()
+    base = first_sentence or cleaned
+    words = base.split()
+    if len(words) > max_words:
+        base = " ".join(words[:max_words])
+    return _normalize_search_query(base, max_chars=96)
+
+
+def _translate_youtube_search_topic(query: str, target_lang: str) -> str:
+    cleaned = _compact_youtube_search_topic(query)
+    if not cleaned:
+        return ""
+
+    source_guess = _estimate_search_query_language(cleaned)
+    if source_guess == target_lang:
+        return cleaned
+
+    if not has_text_ai_provider():
+        return ""
+
+    target_label = PRACTICE_LANG_LABELS.get(target_lang, target_lang.upper())
+    system_prompt = f"""You rewrite short YouTube search topics.
+Target language: {target_label} ({target_lang}).
+
+Return ONLY valid JSON:
+{{
+  "topic": "short YouTube search query"
+}}
+
+Rules:
+- Rewrite the topic as a short, natural YouTube search query in the target language.
+- If the topic is already in the target language, keep it in that language.
+- Convert full dialogue or long sentences into concise keywords or a short phrase.
+- Avoid English words when the target language is not English, unless they are proper nouns.
+- No explanations, markdown, or extra keys."""
+
+    user_message = f"Topic: {cleaned}"
+    result, _provider = chat_with_fallback(
+        system_prompt,
+        user_message,
+        max_tokens=120,
+        temperature=0.0,
+    )
+    if not result:
+        return ""
+
+    parsed = _extract_json_payload_from_text(result) or {}
+    if isinstance(parsed, dict):
+        translated = str(
+            parsed.get("topic")
+            or parsed.get("query")
+            or parsed.get("translation")
+            or ""
+        ).strip()
+    else:
+        translated = ""
+    if not translated:
+        translated = str(result or "").strip().splitlines()[0]
+
+    translated = translated.strip("`\"' ")
+    translated = _normalize_search_query(translated, max_chars=96).strip(" .,:;|-")
+    if not translated:
+        return ""
+
+    translated_guess = _estimate_search_query_language(translated)
+    if translated_guess and translated_guess != target_lang:
+        return ""
+    return translated
+
+
+def _build_youtube_search_attempts(query: str,
+                                   *,
+                                   lang: str = "en",
+                                   allow_generic_fallback: bool = True) -> list[str]:
+    cleaned = _normalize_search_query(query)
+    compact = _compact_youtube_search_topic(cleaned)
+    normalized_lang = _normalize_lang(lang, default="en")
+    attempts: list[str] = []
+    seen: set[str] = set()
+
+    def add_attempt(candidate: str):
+        normalized = _normalize_search_query(candidate)
+        if not normalized:
+            return
+        key = normalized.casefold()
+        if key in seen:
+            return
+        seen.add(key)
+        attempts.append(normalized)
+
+    translated = _translate_youtube_search_topic(cleaned, normalized_lang) if cleaned else ""
+    topics = []
+    if translated:
+        topics.append(translated)
+    if compact:
+        topics.append(compact)
+    if cleaned and cleaned != compact and len(cleaned.split()) <= 10:
+        topics.append(cleaned)
+
+    hints = _youtube_language_search_hints(normalized_lang)
+    for topic in topics:
+        for hint in hints:
+            add_attempt(_compose_search_query(topic, hint))
+        add_attempt(topic)
+
+    if allow_generic_fallback:
+        add_attempt(_default_youtube_query(normalized_lang))
+
+    return attempts[:8]
+
+
 def _format_youtube_duration(value) -> str:
     if isinstance(value, str):
         return value
@@ -1190,13 +1464,13 @@ def _search_videos_with_ytdlp(query: str, max_results: int) -> list[dict]:
     if yt_dlp is None:
         return []
 
-    options = {
+    options = _build_ytdlp_options({
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "extract_flat": True,
         "noplaylist": True,
-    }
+    })
     with yt_dlp.YoutubeDL(options) as ydl:
         info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
 
@@ -1215,19 +1489,15 @@ def _search_youtube_videos(
     lang: str = "en",
     max_results: int = 6,
     allow_generic_fallback: bool = True,
-) -> tuple[list[dict], str, str]:
-    attempts = []
-    cleaned = _normalize_search_query(query)
-    if cleaned:
-        attempts.append(cleaned)
-
-    if allow_generic_fallback:
-        generic = _default_youtube_query(lang)
-        if generic and generic not in attempts:
-            attempts.append(generic)
+) -> tuple[list[dict], str, str, str]:
+    attempts = _build_youtube_search_attempts(
+        query,
+        lang=lang,
+        allow_generic_fallback=allow_generic_fallback,
+    )
 
     if not attempts:
-        return [], "", "query vazia"
+        return [], "", "query vazia", ""
 
     last_error = ""
     for candidate in attempts:
@@ -1237,7 +1507,7 @@ def _search_youtube_videos(
             last_error = f"youtube_search falhou em '{candidate}': {exc}"
             continue
         if videos:
-            return videos, "youtube_search", ""
+            return videos, "youtube_search", "", candidate
         last_error = f"youtube_search sem resultados em '{candidate}'."
 
     if yt_dlp is not None:
@@ -1248,10 +1518,10 @@ def _search_youtube_videos(
                 last_error = f"yt_dlp falhou em '{candidate}': {exc}"
                 continue
             if videos:
-                return videos, "yt_dlp", ""
+                return videos, "yt_dlp", "", candidate
             last_error = f"yt_dlp sem resultados em '{candidate}'."
 
-    return [], "", last_error or "falha desconhecida na busca do YouTube"
+    return [], "", last_error or "falha desconhecida na busca do YouTube", ""
 
 
 def _cleanup_old_audio(max_age_hours: int = AUDIO_MAX_AGE_HOURS,
@@ -1319,6 +1589,90 @@ def _extract_youtube_video_id(value: str) -> str:
         if match:
             return match.group(1)
     return ""
+
+
+def _parse_ytdlp_browser_spec(value: str) -> tuple | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+
+    container = None
+    if "::" in raw:
+        raw, container = raw.split("::", 1)
+        container = container.strip() or None
+
+    profile = None
+    if ":" in raw:
+        raw, profile = raw.split(":", 1)
+        profile = profile.strip() or None
+
+    keyring = None
+    if "+" in raw:
+        raw, keyring = raw.split("+", 1)
+        keyring = keyring.strip() or None
+
+    browser = raw.strip().lower()
+    if not browser:
+        return None
+
+    # A API Python do yt-dlp espera uma tupla, e nao a string crua do CLI.
+    return (browser, profile, keyring, container)
+
+
+def _build_ytdlp_options(base_options: dict | None = None) -> dict:
+    options = dict(base_options or {})
+    options.setdefault("quiet", True)
+    options.setdefault("no_warnings", True)
+
+    if YTDLP_PROXY_URL:
+        options.setdefault("proxy", YTDLP_PROXY_URL)
+
+    if YTDLP_COOKIES_FILE:
+        cookie_path = Path(YTDLP_COOKIES_FILE)
+        if not cookie_path.exists():
+            raise RuntimeError(
+                "YTDLP_COOKIES_FILE aponta para um arquivo inexistente: "
+                f"{cookie_path}"
+            )
+        options.setdefault("cookiefile", str(cookie_path))
+    elif YTDLP_COOKIES_FROM_BROWSER:
+        browser_spec = _parse_ytdlp_browser_spec(YTDLP_COOKIES_FROM_BROWSER)
+        if not browser_spec:
+            raise RuntimeError(
+                "YTDLP_COOKIES_FROM_BROWSER invalido. "
+                "Use algo como 'edge', 'chrome:Default' ou 'firefox'."
+            )
+        options.setdefault("cookiesfrombrowser", browser_spec)
+
+    if YTDLP_SLEEP_REQUESTS_SEC > 0:
+        options.setdefault("sleep_requests", YTDLP_SLEEP_REQUESTS_SEC)
+
+    if YTDLP_SLEEP_INTERVAL_SEC > 0:
+        options.setdefault("sleep_interval", YTDLP_SLEEP_INTERVAL_SEC)
+        max_sleep = max(YTDLP_MAX_SLEEP_INTERVAL_SEC, YTDLP_SLEEP_INTERVAL_SEC)
+        if max_sleep > YTDLP_SLEEP_INTERVAL_SEC:
+            options.setdefault("max_sleep_interval", max_sleep)
+
+    if YTDLP_SOCKET_TIMEOUT_SEC > 0:
+        options.setdefault("socket_timeout", YTDLP_SOCKET_TIMEOUT_SEC)
+
+    return options
+
+
+def _build_youtube_transcript_http_client():
+    proxy_url = str(YOUTUBE_TRANSCRIPT_PROXY_URL or "").strip()
+    if not proxy_url:
+        return None
+
+    http_client = http_requests.Session()
+    http_client.proxies.update({
+        "http": proxy_url,
+        "https": proxy_url,
+    })
+    http_client.headers.update({
+        "Accept-Encoding": "gzip, deflate",
+    })
+    return http_client
 
 
 def _get_snippet_value(snippet, key: str, default=None):
@@ -1496,13 +1850,35 @@ def _list_youtube_transcripts(video_id: str):
             "Dependência 'youtube-transcript-api' não instalada no ambiente."
         )
 
-    # Compatibilidade com versões antigas e novas da biblioteca.
-    if hasattr(YouTubeTranscriptApi, "list_transcripts"):
-        return YouTubeTranscriptApi.list_transcripts(video_id)
+    api = None
+    http_client = _build_youtube_transcript_http_client()
+    if http_client is not None:
+        try:
+            api = YouTubeTranscriptApi(http_client=http_client)
+        except TypeError:
+            api = None
 
-    api = YouTubeTranscriptApi()
-    if hasattr(api, "list"):
+    if api is None:
+        try:
+            api = YouTubeTranscriptApi()
+        except TypeError:
+            api = None
+
+    if api is not None and hasattr(api, "list"):
         return api.list(video_id)
+
+    if api is not None and hasattr(api, "list_transcripts"):
+        return api.list_transcripts(video_id)
+
+    # Compatibilidade com versões antigas da biblioteca.
+    if hasattr(YouTubeTranscriptApi, "list_transcripts"):
+        if http_client is not None:
+            raise RuntimeError(
+                "A versão instalada de 'youtube-transcript-api' não aceita "
+                "proxy configurável. Atualize a dependência ou use o fallback "
+                "yt-dlp com cookies/proxy."
+            )
+        return YouTubeTranscriptApi.list_transcripts(video_id)
 
     raise RuntimeError(
         "Versão de 'youtube-transcript-api' incompatível: método de listagem não encontrado."
@@ -2015,13 +2391,13 @@ def _fetch_youtube_transcript_with_deepgram(video_id: str, preferred_lang: str =
         tmp_dir = Path(tmp)
         outtmpl = str(tmp_dir / "%(id)s.%(ext)s")
         url = f"https://www.youtube.com/watch?v={video_id}"
-        options = {
+        options = _build_ytdlp_options({
             "quiet": True,
             "no_warnings": True,
             "noplaylist": True,
             "format": "bestaudio[abr<=96]/worstaudio/worst",
             "outtmpl": outtmpl,
-        }
+        })
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_path = _find_downloaded_audio_file(tmp_dir, info, ydl)
@@ -2094,11 +2470,11 @@ def _fetch_youtube_transcript_with_ytdlp(video_id: str, preferred_lang: str = "e
         raise RuntimeError("Dependência 'yt-dlp' não instalada no ambiente.")
 
     url = f"https://www.youtube.com/watch?v={video_id}"
-    options = {
+    options = _build_ytdlp_options({
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
-    }
+    })
 
     with yt_dlp.YoutubeDL(options) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -2531,13 +2907,13 @@ def _fetch_youtube_transcript_with_openrouter_audio(video_id: str,
         tmp_dir = Path(tmp)
         outtmpl = str(tmp_dir / "%(id)s.%(ext)s")
         url = f"https://www.youtube.com/watch?v={video_id}"
-        options = {
+        options = _build_ytdlp_options({
             "quiet": True,
             "no_warnings": True,
             "noplaylist": True,
             "format": "bestaudio[abr<=64]/worstaudio/worst",
             "outtmpl": outtmpl,
-        }
+        })
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_path = _find_downloaded_audio_file(tmp_dir, info, ydl)
@@ -2746,13 +3122,13 @@ def _fetch_youtube_transcript_with_local_whisper(video_id: str,
         tmp_dir = Path(tmp)
         outtmpl = str(tmp_dir / "%(id)s.%(ext)s")
         url = f"https://www.youtube.com/watch?v={video_id}"
-        options = {
+        options = _build_ytdlp_options({
             "quiet": True,
             "no_warnings": True,
             "noplaylist": True,
             "format": "bestaudio[abr<=64]/worstaudio/worst",
             "outtmpl": outtmpl,
-        }
+        })
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_path = _find_downloaded_audio_file(tmp_dir, info, ydl)
@@ -2880,13 +3256,13 @@ def _fetch_youtube_transcript_with_openai(video_id: str, preferred_lang: str = "
         outtmpl = str(tmp_dir / "%(id)s.%(ext)s")
         url = f"https://www.youtube.com/watch?v={video_id}"
 
-        options = {
+        options = _build_ytdlp_options({
             "quiet": True,
             "no_warnings": True,
             "noplaylist": True,
             "format": "bestaudio[abr<=64]/worstaudio/worst",
             "outtmpl": outtmpl,
-        }
+        })
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_path = _find_downloaded_audio_file(tmp_dir, info, ydl)
@@ -4518,12 +4894,23 @@ def _build_transcript_error_response(extract_errors: list) -> tuple[dict, int]:
                      "Tente mudar o idioma ou usar outro vídeo."
         }, 404
     if any(_is_youtube_access_blocked_error(exc) for exc in extract_errors):
+        config_hint = (
+            "Verifique YTDLP_COOKIES_FILE/YTDLP_COOKIES_FROM_BROWSER"
+            if (YTDLP_COOKIES_FILE or YTDLP_COOKIES_FROM_BROWSER)
+            else "Configure YTDLP_COOKIES_FILE (ex.: config/youtube-cookies.txt) "
+                 "ou YTDLP_COOKIES_FROM_BROWSER=edge"
+        )
+        proxy_hint = (
+            "e confirme se o proxy configurado ainda funciona."
+            if (YTDLP_PROXY_URL or YOUTUBE_TRANSCRIPT_PROXY_URL)
+            else "e opcionalmente YTDLP_PROXY_URL/YOUTUBE_TRANSCRIPT_PROXY_URL."
+        )
         return {
             "error": "O YouTube bloqueou a extração automática neste ambiente "
                      "(bot check / 429 / bloqueio de IP). Isso acontece com "
                      "mais frequência em Docker e servidores. Tente rodar a "
                      "aplicação fora do container, aguardar alguns minutos, "
-                     "ou configurar cookies do YouTube para o yt-dlp."
+                     f"{config_hint} {proxy_hint}"
         }, 429
 
     for exc in extract_errors:
@@ -4752,6 +5139,22 @@ LOCAL_CONVERSATION_SUGGESTIONS = {
     ],
 }
 
+CONVERSATION_SCENARIO_PROMPTS = {
+    "casual": "You are catching up with a friend in a relaxed everyday conversation.",
+    "travel": "The situation is travel: directions, transport, food, places, and plans on the go.",
+    "work": "The situation is professional: projects, routines, meetings, priorities, and collaboration.",
+    "interview": "The situation is a mock interview. Ask focused questions, one at a time, while sounding human and natural.",
+    "tech": "The situation is a friendly conversation about technology, learning, digital tools, and ideas.",
+    "daily": "The situation is daily life: habits, routines, home life, errands, and personal plans.",
+}
+
+CONVERSATION_GOAL_PROMPTS = {
+    "flow": "Prioritize rhythm, warmth, and easy continuation.",
+    "confidence": "Use slightly simpler wording and help the student keep talking without pressure.",
+    "vocabulary": "Naturally introduce a few useful words or expressions, but stay conversational.",
+    "opinions": "Invite the student to explain reasons, preferences, and opinions in more detail.",
+}
+
 
 def _build_local_practice_payload(topic: str,
                                   target_lang: str,
@@ -4769,10 +5172,10 @@ def _build_local_practice_payload(topic: str,
         idx = 0
         while len(lines) < sentence_count:
             question, answer = pairs[idx % len(pairs)]
-            lines.append(f"A: {question.format(topic=safe_topic)}")
+            lines.append(question.format(topic=safe_topic))
             if len(lines) >= sentence_count:
                 break
-            lines.append(f"B: {answer}")
+            lines.append(answer)
             idx += 1
         text = "\n".join(lines[:sentence_count]).strip()
     else:
@@ -4859,6 +5262,36 @@ def _local_conversation_suggestions(lang: str) -> list[str]:
     if suggestions:
         return suggestions[:3]
     return LOCAL_CONVERSATION_SUGGESTIONS["en"][:3]
+
+
+def _normalize_conversation_scenario(value, default: str = "casual") -> str:
+    raw = str(value or default).strip().lower()
+    aliases = {
+        "small_talk": "casual",
+        "smalltalk": "casual",
+        "friend": "casual",
+        "trip": "travel",
+        "office": "work",
+        "job": "interview",
+        "career": "interview",
+        "technology": "tech",
+        "routine": "daily",
+        "home": "daily",
+    }
+    normalized = aliases.get(raw, raw)
+    return normalized if normalized in CONVERSATION_SCENARIO_PROMPTS else default
+
+
+def _normalize_conversation_goal(value, default: str = "flow") -> str:
+    raw = str(value or default).strip().lower()
+    aliases = {
+        "fluency": "flow",
+        "confidence_building": "confidence",
+        "words": "vocabulary",
+        "opinion": "opinions",
+    }
+    normalized = aliases.get(raw, raw)
+    return normalized if normalized in CONVERSATION_GOAL_PROMPTS else default
 
 
 def _normalize_conversation_suggestions(raw_items, limit: int = 3) -> list[str]:
@@ -5431,6 +5864,90 @@ Regras:
     }
 
 
+def _build_session_sentence_translations(sentences: list[str],
+                                         source_lang: str,
+                                         target_lang: str) -> dict[str, Any]:
+    normalized_sentences = [
+        _clean_caption_text(sentence or "")
+        for sentence in (sentences or [])
+    ]
+    normalized_sentences = [sentence for sentence in normalized_sentences if sentence]
+
+    if not normalized_sentences:
+        return {
+            "translations": [],
+            "provider": "empty",
+            "warning": "Nenhuma frase válida para traduzir.",
+        }
+
+    src_base = str(source_lang or "").split("-")[0].lower()
+    tgt_base = str(target_lang or "").split("-")[0].lower()
+    payload = [
+        {"phrase_index": idx, "text": sentence}
+        for idx, sentence in enumerate(normalized_sentences)
+    ]
+
+    provider = "fallback_local"
+    warning = ""
+    filled: dict[int, dict] = {}
+
+    if src_base == tgt_base:
+        provider = "same_language"
+    elif has_text_ai_provider():
+        filled = _backfill_study_translation_pronunciation(
+            payload,
+            source_lang=source_lang,
+            target_lang=target_lang,
+        )
+        if filled:
+            provider = "ai_backfill"
+        else:
+            warning = (
+                "A IA não devolveu traduções completas. "
+                "Aplicado fallback local quando possível."
+            )
+    else:
+        warning = (
+            "IA textual indisponível. "
+            "Aplicado fallback local quando possível."
+        )
+
+    translations = []
+    unavailable_count = 0
+    for item in payload:
+        idx = item["phrase_index"]
+        original = item["text"]
+        translated = _clean_caption_text((filled.get(idx) or {}).get("translation") or "")
+
+        if not translated:
+            translated = _local_translate_fallback_text(
+                original,
+                source_lang=source_lang,
+                target_lang=target_lang,
+            )
+
+        if not translated:
+            translated = "Tradução indisponível no momento."
+            unavailable_count += 1
+
+        translations.append({
+            "phrase_index": idx,
+            "text": original,
+            "translation": translated,
+        })
+
+    if unavailable_count and not warning:
+        warning = (
+            f"{unavailable_count} frase(s) ficaram sem tradução automática completa."
+        )
+
+    return {
+        "translations": translations,
+        "provider": provider,
+        "warning": warning,
+    }
+
+
 @app.errorhandler(BadRequest)
 def handle_bad_request(exc):
     if request.path.startswith("/api/"):
@@ -5506,7 +6023,13 @@ def get_voices():
 @app.route("/api/generate", methods=["POST"])
 def generate_session():
     data = _require_json_object()
-    text = _normalize_text_field(data.get("text"), "Texto")
+    text = _normalize_shadowing_text(
+        _normalize_text_field(data.get("text"), "Texto")
+    )
+    if not text:
+        return jsonify({
+            "error": "O texto ficou vazio após remover marcadores como A: e B:."
+        }), 400
     detected_lang = _detect_language(text)
     lang = _normalize_lang(data.get("lang"), default=detected_lang)
     piper_options = _build_piper_request_options(
@@ -5593,7 +6116,7 @@ def generate_session():
     search_query = _clean_text_for_search(text)
     search_query += " English speaking viral" if lang == "en" else " viral"
 
-    videos, video_source, video_search_error = _search_youtube_videos(
+    videos, video_source, video_search_error, video_query_used = _search_youtube_videos(
         search_query,
         lang=lang,
         max_results=6,
@@ -5620,6 +6143,7 @@ def generate_session():
         "videos": videos,
         "video_source": video_source,
         "video_warning": video_warning,
+        "video_query_used": video_query_used,
         "session_id": audio_id,
         "durations": word_durations,
     }
@@ -5824,6 +6348,47 @@ Se não souber um campo, seja conservador e não invente."""
     return jsonify({"analysis": analysis, "provider": provider or "unknown"})
 
 
+@app.route("/api/session-translation", methods=["POST"])
+def session_translation():
+    data = _require_json_object()
+    source_lang = _normalize_lang(data.get("source_lang"), default="en")
+    default_target = "en" if source_lang == "pt" else "pt"
+    target_lang = _normalize_study_target_lang(data.get("target_lang"), default=default_target)
+
+    raw_sentences = data.get("sentences")
+    if isinstance(raw_sentences, list):
+        sentences = [
+            _clean_caption_text(item or "")
+            for item in raw_sentences
+        ]
+        sentences = [item for item in sentences if item]
+    else:
+        text = _normalize_text_field(
+            data.get("text"),
+            "Texto",
+            required=False,
+            max_chars=MAX_TEXT_CHARS,
+        )
+        sentences = re.split(r'(?<=[.!?。！？])\s+|\n+', text)
+        sentences = [item.strip() for item in sentences if item and item.strip()]
+
+    if not sentences:
+        return jsonify({"error": "Nenhuma frase válida para traduzir."}), 400
+
+    result = _build_session_sentence_translations(
+        sentences=sentences[:32],
+        source_lang=source_lang,
+        target_lang=target_lang,
+    )
+    return jsonify({
+        "source_lang": source_lang,
+        "target_lang": target_lang,
+        "provider": result.get("provider", "unknown"),
+        "warning": result.get("warning", ""),
+        "translations": result.get("translations", []),
+    })
+
+
 # ──────────────────────────────────────────────────────────────
 # API — Gerar prática com IA
 # ──────────────────────────────────────────────────────────────
@@ -5901,6 +6466,7 @@ Regras obrigatórias:
 - O texto deve seguir o tipo solicitado: {text_type_label}.
 - O texto deve seguir o tamanho solicitado: {length_rule["sentences"]}.
 - O texto deve soar natural, como um falante nativo diria.
+- Não use marcadores de fala como "A:", "B:", "Speaker 1:" ou "Speaker 2:" no texto.
 - "focus_points" e "meaning" devem ficar em português do Brasil."""
 
     user_msg = (
@@ -5943,7 +6509,7 @@ Regras obrigatórias:
         practice = {}
     practice.setdefault("title", fallback_practice.get("title"))
 
-    original_text = str(practice.get("text", "") or "")
+    original_text = _normalize_shadowing_text(practice.get("text", "") or "")
     if original_text.strip():
         practice["text"] = _enforce_practice_text_length(original_text, text_length)
     else:
@@ -5988,7 +6554,7 @@ def search_videos():
     )
     lang = _normalize_lang(data.get("lang"), default="en")
 
-    videos, source, error = _search_youtube_videos(
+    videos, source, error, query_used = _search_youtube_videos(
         query,
         lang=lang,
         max_results=8,
@@ -5997,7 +6563,12 @@ def search_videos():
     if error and not videos:
         return jsonify({"error": error}), 500
 
-    return jsonify({"videos": videos, "source": source})
+    return jsonify({
+        "videos": videos,
+        "source": source,
+        "lang": lang,
+        "query_used": query_used,
+    })
 
 
 # ──────────────────────────────────────────────────────────────
@@ -6468,6 +7039,12 @@ def cleanup_audio():
 def voice_conversation():
     data = _require_json_object()
     audio_b64 = str(data.get("audio_b64", "")).strip()
+    manual_text = _normalize_text_field(
+        data.get("text"),
+        "Texto",
+        required=False,
+        max_chars=600,
+    )
     lang = _normalize_lang(data.get("lang"), default="en")
     learner = _build_learner_context(data, default_lang=lang)
     voice = _normalize_text_field(
@@ -6484,49 +7061,66 @@ def voice_conversation():
         default_context_hint="conversation_reply",
         default_profile="chat",
     )
+    scenario = _normalize_conversation_scenario(data.get("scenario"), default="casual")
+    goal = _normalize_conversation_goal(data.get("goal"), default="flow")
     suggest  = _coerce_bool(data.get("suggest", False), default=False)
 
-    if not audio_b64:
-        return jsonify({"error": "Áudio não fornecido."}), 400
-
-    if not (WhisperModel and LOCAL_WHISPER_ENABLED):
-        return jsonify({
-            "error": "Whisper local não disponível. Instale 'faster-whisper' e reinicie."
-        }), 500
-
-    try:
-        audio_bytes = base64.b64decode(audio_b64)
-    except Exception:
-        return jsonify({"error": "Áudio inválido (base64 corrompido)."}), 400
+    if not audio_b64 and not manual_text:
+        return jsonify({"error": "Envie áudio ou texto para conversar."}), 400
 
     audio_id = str(uuid.uuid4())[:8]
-    tmp_audio_path = AUDIO_DIR / f"conv_in_{audio_id}.webm"
-    tmp_audio_path.write_bytes(audio_bytes)
+    tmp_audio_path = None
+    user_text = manual_text
+
+    if audio_b64:
+        if not (WhisperModel and LOCAL_WHISPER_ENABLED):
+            return jsonify({
+                "error": "Whisper local não disponível. Instale 'faster-whisper' e reinicie."
+            }), 500
+        try:
+            audio_bytes = base64.b64decode(audio_b64)
+        except Exception:
+            return jsonify({"error": "Áudio inválido (base64 corrompido)."}), 400
+
+        tmp_audio_path = AUDIO_DIR / f"conv_in_{audio_id}.webm"
+        tmp_audio_path.write_bytes(audio_bytes)
 
     try:
-        # 1. Transcrição local com Whisper
-        model = _get_local_whisper_model()
-        lang_code = lang.split("-")[0]
-        seg_iter, _ = model.transcribe(
-            str(tmp_audio_path),
-            language=lang_code,
-            beam_size=5,
-            best_of=5,
-            vad_filter=True,
-            condition_on_previous_text=False,
-        )
-        user_text = " ".join(seg.text.strip() for seg in seg_iter).strip()
+        # 1. Transcrição local com Whisper, quando a entrada vier por voz
+        if audio_b64:
+            model = _get_local_whisper_model()
+            lang_code = lang.split("-")[0]
+            seg_iter, _ = model.transcribe(
+                str(tmp_audio_path),
+                language=lang_code,
+                beam_size=5,
+                best_of=5,
+                vad_filter=True,
+                condition_on_previous_text=False,
+            )
+            user_text = " ".join(seg.text.strip() for seg in seg_iter).strip()
 
-        if not user_text:
-            return jsonify({
-                "error": "Não consegui entender o áudio. Fale mais próximo ao microfone."
-            }), 400
+            if not user_text:
+                return jsonify({
+                    "error": "Não consegui entender o áudio. Fale mais próximo ao microfone."
+                }), 400
 
         # 2. Resposta da IA (com continuidade local sem token)
         lang_label = PRACTICE_LANG_LABELS.get(lang, lang.upper())
+        scenario_instruction = CONVERSATION_SCENARIO_PROMPTS.get(
+            scenario,
+            CONVERSATION_SCENARIO_PROMPTS["casual"],
+        )
+        goal_instruction = CONVERSATION_GOAL_PROMPTS.get(
+            goal,
+            CONVERSATION_GOAL_PROMPTS["flow"],
+        )
         system_prompt = (
             f"You are Alex, a real person — a native {lang_label} speaker in your late 20s. "
             f"You are chatting casually with a Brazilian friend who wants to practice {lang_label}.\n\n"
+            f"Conversation setup:\n"
+            f"- Scenario: {scenario_instruction}\n"
+            f"- Goal: {goal_instruction}\n\n"
             "Your personality:\n"
             "- Curious, witty, warm. You genuinely enjoy conversations.\n"
             "- You share brief personal opinions, reactions, and anecdotes when relevant.\n"
@@ -6619,6 +7213,9 @@ def voice_conversation():
             "ai_text": ai_text,
             "provider": provider or "unknown",
             "tts_engine": tts_engine,
+            "input_mode": "voice" if audio_b64 else "text",
+            "scenario": scenario,
+            "goal": goal,
         }
         if piper_meta:
             result["piper_meta"] = piper_meta
@@ -6650,7 +7247,8 @@ def voice_conversation():
 
     finally:
         try:
-            tmp_audio_path.unlink(missing_ok=True)
+            if tmp_audio_path:
+                tmp_audio_path.unlink(missing_ok=True)
         except Exception:
             pass
 
@@ -8603,6 +9201,9 @@ def api_status():
         "deepgram_tts_langs": deepgram_tts_supported_languages(),
         "youtube_transcript": bool(YouTubeTranscriptApi),
         "yt_dlp": bool(yt_dlp),
+        "youtube_proxy": bool(YTDLP_PROXY_URL or YOUTUBE_TRANSCRIPT_PROXY_URL),
+        "yt_dlp_cookies_file": bool(YTDLP_COOKIES_FILE),
+        "yt_dlp_cookies_from_browser": bool(YTDLP_COOKIES_FROM_BROWSER),
         "local_whisper": bool(WhisperModel and LOCAL_WHISPER_ENABLED),
         "openai_transcribe": bool(OPENAI_API_KEY),
         "adaptive_learning": _ADAPTIVE_STORE.health(),
@@ -9459,6 +10060,12 @@ if __name__ == "__main__":
     print(
         "   yt-dlp fallback: "
         f"{'✅ Disponível' if yt_dlp else '❌ Dependência ausente'}"
+    )
+    print(
+        "   YouTube auth/proxy: "
+        f"cookies-file={'✅' if YTDLP_COOKIES_FILE else '❌'}, "
+        f"cookies-browser={'✅' if YTDLP_COOKIES_FROM_BROWSER else '❌'}, "
+        f"proxy={'✅' if (YTDLP_PROXY_URL or YOUTUBE_TRANSCRIPT_PROXY_URL) else '❌'}"
     )
     print(
         "   Local Whisper fallback: "

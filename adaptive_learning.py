@@ -1281,6 +1281,8 @@ class AdaptiveLearningStore:
             "recommendations": [],
             "weak_points": [],
             "strengths": [],
+            "flashcard_pool": [],
+            "language_breakdown": [],
         }
         if not self.ensure_schema():
             return dashboard
@@ -1323,10 +1325,60 @@ class AdaptiveLearningStore:
                     """,
                     (learner["id"],),
                 ).fetchall()
+                flashcard_pool = conn.execute(
+                    f"""
+                    WITH ranked_flashcards AS (
+                        SELECT
+                            *,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY target_lang
+                                ORDER BY
+                                    CASE
+                                        WHEN COALESCE(next_due_at, NOW()) <= NOW() THEN 0
+                                        ELSE 1
+                                    END ASC,
+                                    mastery_score ASC,
+                                    seen_count DESC,
+                                    updated_at DESC
+                            ) AS lang_rank
+                        FROM {REVIEW_TABLE}
+                        WHERE learner_id = %s
+                    )
+                    SELECT *
+                    FROM ranked_flashcards
+                    WHERE lang_rank <= 8
+                    ORDER BY
+                        CASE
+                            WHEN COALESCE(next_due_at, NOW()) <= NOW() THEN 0
+                            ELSE 1
+                        END ASC,
+                        mastery_score ASC,
+                        seen_count DESC,
+                        updated_at DESC
+                    LIMIT 32
+                    """,
+                    (learner["id"],),
+                ).fetchall()
                 tracked = conn.execute(
                     f"SELECT COUNT(*) AS total FROM {REVIEW_TABLE} WHERE learner_id = %s",
                     (learner["id"],),
                 ).fetchone() or {}
+                language_breakdown = conn.execute(
+                    f"""
+                    SELECT
+                        target_lang,
+                        COUNT(*) AS total_items,
+                        COUNT(*) FILTER (
+                            WHERE COALESCE(next_due_at, NOW()) <= NOW()
+                        ) AS due_items,
+                        AVG(mastery_score) AS avg_mastery
+                    FROM {REVIEW_TABLE}
+                    WHERE learner_id = %s
+                    GROUP BY target_lang
+                    ORDER BY COUNT(*) DESC, target_lang ASC
+                    """,
+                    (learner["id"],),
+                ).fetchall()
                 active_days = conn.execute(
                     f"""
                     SELECT COUNT(DISTINCT DATE(created_at)) AS active_days
@@ -1370,6 +1422,19 @@ class AdaptiveLearningStore:
                 dashboard["strengths"] = [
                     self._serialize_review_item(dict(item))
                     for item in strengths
+                ]
+                dashboard["flashcard_pool"] = [
+                    self._serialize_review_item(dict(item))
+                    for item in flashcard_pool
+                ]
+                dashboard["language_breakdown"] = [
+                    {
+                        "target_lang": _normalize_lang(item.get("target_lang"), default="en"),
+                        "total_items": int(item.get("total_items") or 0),
+                        "due_items": int(item.get("due_items") or 0),
+                        "avg_mastery": round(float(item.get("avg_mastery") or 0), 2),
+                    }
+                    for item in language_breakdown
                 ]
                 dashboard["recommendations"] = self._build_recommendations(
                     dashboard["review_queue"],
@@ -1505,6 +1570,9 @@ class AdaptiveLearningStore:
 
     @staticmethod
     def _serialize_review_item(row: dict[str, Any]) -> dict[str, Any]:
+        metadata = row.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
         return {
             "id": int(row.get("id") or 0),
             "item_type": row.get("item_type") or "",
@@ -1521,6 +1589,7 @@ class AdaptiveLearningStore:
             "next_due_at": _serialize_datetime(row.get("next_due_at")),
             "updated_at": _serialize_datetime(row.get("updated_at")),
             "target_lang": row.get("target_lang") or "",
+            "metadata": metadata,
         }
 
     def _build_recommendations(

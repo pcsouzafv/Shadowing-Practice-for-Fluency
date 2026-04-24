@@ -98,6 +98,58 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Elastic Stack (opcional para busca/observabilidade/demo) ──────────────
+  elasticsearch:
+    profiles: ["elastic"]
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-7.15.1}
+    container_name: shadowing-elasticsearch
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "${ELASTICSEARCH_TRANSPORT_PORT:-9300}:9300"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.monitoring.collection.enabled: "true"
+      cluster.name: ${ELASTICSEARCH_CLUSTER_NAME:-shadowing-practice}
+      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  kibana:
+    profiles: ["elastic"]
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-7.15.1}
+    container_name: shadowing-kibana
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_NAME: kibana
+      MONITORING_KIBANA_COLLECTION_ENABLED: "false"
+      NODE_OPTIONS: ${KIBANA_NODE_OPTIONS:---max-old-space-size=512}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTEDSAVEDOBJECTS_KEY:-shadowing-practice-kibana-32-char-key}
+      XPACK_REPORTING_ENCRYPTIONKEY: ${KIBANA_REPORTING_KEY:-shadowing-practice-reporting-32-char-key}
+      XPACK_SECURITY_ENCRYPTIONKEY: ${KIBANA_SECURITY_KEY:-shadowing-practice-security-32-char-key}
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  metricbeat:
+    profiles: ["elastic"]
+    image: docker.elastic.co/beats/metricbeat:${ELASTIC_STACK_VERSION:-7.15.1}
+    container_name: shadowing-metricbeat
+    user: root
+    command: ["-e", "--strict.perms=false"]
+    volumes:
+      - ./config/elastic/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+    depends_on:
+      - elasticsearch
+      - kibana
+    restart: unless-stopped
+
 volumes:
   evolution_instances:
   evolution_db:
+  elasticsearch_data:
+    external: ${ELASTICSEARCH_DATA_VOLUME_EXTERNAL:-false}
+    name: ${ELASTICSEARCH_DATA_VOLUME:-shadowingpracticeforfluency_elasticsearch_data}
